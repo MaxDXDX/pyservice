@@ -38,7 +38,7 @@ class PyConfigTestCase(TestCase):
     def setUp(self) -> None:
 
         class MyConfig(PyConfig):
-            service_tag = 'my_service'
+            service_ref = 'my_service'
             api_hostname = 'awesome-api.com'
             downloads_directory = self.tmp_path / 'my-downloads'
             readme_file = self.tmp_path / 'readme.txt'
@@ -63,10 +63,12 @@ class PyConfigTestCase(TestCase):
 
     def test_check_names_of_directory_and_file_attributes(self):
         class CorrectConfig(PyConfig):
+            service_ref = 'rest-api'
             my_directory = self.tmp_path / 'my-directory'
             my_file = self.tmp_path / 'my-file'
 
         class IncorrectConfig(PyConfig):
+            service_ref = 'rest-api'
             my_path = self.tmp_path / 'my-directory'
             config = self.tmp_path / 'my-config-file'
 
@@ -100,6 +102,9 @@ class PyConfigTestCase(TestCase):
             value_from_cfg = getattr(self.cfg, key)
             value_from_cfg_class = getattr(self.cfg_cls, key)
             self.assertIsInstance(value_from_cfg, type(value_from_cfg_class))
+            # pylint: disable=W0212
+            if key in self.cfg._cluster_level_options:
+                print(env_key, key)
 
     def test_can_set_any_option_from_string(self):
         # Path:

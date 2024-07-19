@@ -6,20 +6,39 @@ PyConfig class for building service`s config.
 import inspect
 import json
 import os
-import logging
 from pathlib import Path
 from pytz import tzinfo, timezone
+
+
+ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS = 'cluster'
 
 
 class PyConfig:
     """Config class."""
 
-    env_var_prefix = 'backuper'
-    service_ref = 'python_service'
+    service_ref: str = ''
+    env_var_prefix: str = ''
+
+    # cluster-level options (env var prefix should be 'CLUSTER_')
+    rabbitmq_hostname: str = 'mb.cebb.pro'
+    rabbitmq_port: str = '50001'
+    rabbitmq_vhost: str = 'vhost'
+    rabbitmq_username: str = 'admin'
+    rabbitmq_password: str = 'rabbit-initial-password'
 
     _directories_should_be_created: bool = True
 
-    _secret_options = []
+    _secret_options = [
+
+    ]
+
+    _cluster_level_options = [
+        'rabbitmq_hostname',
+        'rabbitmq_port',
+        'rabbitmq_vhost',
+        'rabbitmq_username',
+        'rabbitmq_password',
+    ]
 
     def disable_auto_creating_directories(self):
         self._directories_should_be_created = False
@@ -28,11 +47,20 @@ class PyConfig:
         self._directories_should_be_created = True
 
     def __init__(self):
+        if not self.env_var_prefix:
+            self.env_var_prefix = self.service_ref
         self._validate()
         self.override_from_environment()
-        assert self.service_ref
 
     def _validate(self):
+        try:
+            assert isinstance(self.service_ref, str)
+            assert len(self.service_ref) > 0
+        except (AttributeError, AssertionError) as e:
+            raise ValueError(
+                'You must provide <service_ref> '
+                'value for your config') from e
+
         self._directories_should_be_created = False
         for option_name in self.all_keys:
             value = getattr(self, option_name)
@@ -90,13 +118,17 @@ class PyConfig:
         return self._class_attributes()
 
     def convert_key_to_env_key(self, key: str):
-        upper = key.upper()
-        service_tag_upper = self.env_var_prefix.upper()
-        return service_tag_upper + '_' + upper
+        if key in self._cluster_level_options:
+            prefix = ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS
+        else:
+            prefix = self.env_var_prefix
+        return f'{prefix}_{key}'.upper()
 
     def restore_key_from_env_key(self, env_key: str):
         lower = env_key.lower()
-        without_prefix = lower.replace(f'{self.env_var_prefix}_', '')
+        without_prefix = (
+            lower.replace(f'{self.env_var_prefix}_', '')
+            .replace(f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_', ''))
         return without_prefix
 
     @property
@@ -151,6 +183,6 @@ class PyConfig:
         elif issubclass(attr_class, dict):
             initiated_from_string = json.loads(provided_value)
         else:
-            return ValueError(f'Can not normalize value from string to type: '
+            raise ValueError(f'Can not normalize value from string to type: '
                               f'{attr_class}, value - {provided_value}')
         return initiated_from_string

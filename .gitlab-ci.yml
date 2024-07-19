@@ -22,7 +22,8 @@ linter:
   script:
     - wget https://git.cebb.pro/public-assets/assets/-/raw/main/pylintrc -O pylintrc
     - echo "================================================================="
-    - pylint **/*.py
+    - pylint src
+    - pylint tests
     - echo "================================================================="
   except:
     - _package
