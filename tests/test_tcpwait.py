@@ -1,9 +1,14 @@
+"""
+Tests.
+"""
+
 from unittest import IsolatedAsyncioTestCase
 
 from pyservice.tcpwait import tcpwait
 
 
 class TcpWait(IsolatedAsyncioTestCase):
+    """Test case."""
 
     async def test_wait_for_service_as_tuple(self):
         target_as_tuple = ('google.com', 443)

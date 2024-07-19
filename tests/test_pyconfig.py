@@ -1,5 +1,8 @@
+"""
+Tests.
+"""
+
 import json
-from uuid import UUID
 
 from pytz import timezone, tzinfo
 from unittest import TestCase
@@ -12,6 +15,8 @@ current_path = Path(__file__).parent
 
 
 class PyConfigTestCase(TestCase):
+    """Config tests."""
+
     tmp_path = current_path / 'tmp'
 
     @classmethod
