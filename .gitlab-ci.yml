@@ -34,6 +34,7 @@ update-package:
     - source ./ci-jobs/update-package.sh
   only:
     - main
+    - master
 
 update-package-branch:
   stage: update
@@ -48,3 +49,4 @@ update-package-branch:
     - git push https://deploy:$DEPLOYMENT_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:$DEPLOYMENT_BRANCH
   only:
     - main
+    - master
