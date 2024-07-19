@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyservice"
+authors = [
+    {name = "Max Dubrovin"},
+]
+
+description = "Common tools for creating microservice."
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+#    "restapi @ git+https://pack:XWmded8f1gu2csxVTyb3@git.cebb.pro/ias-phoenix-native/submodules/restapi.git@_package",
+#    # TODO: replace tgs-client by tgbot in the future
+#    "tgs-client @ git+https://pack:F6VxZN5xuHrd5fsdK9_V@git.cebb.pro/ias-phoenix-native/submodules/telegram-service-client.git@_package",
+#    "aiofiles>=23.2.1",
+#    "yadisk>=2.1.0",
+#    "httpx==0.27.0",
+    "pytz",
+#    "python-gnupg",
+#    "celery",
+#    "redis",
+]

@@ -1,0 +1,50 @@
+default:
+  tags:
+    - new-runner
+
+stages:
+  - test
+  - linter
+  - update
+
+test:
+  image: python:3.12
+  stage: test
+  script:
+    - python -m pip install -r requirements-dev.txt
+    - python -m unittest
+  except:
+    - _package
+
+linter:
+  stage: linter
+  image: pipelinecomponents/pylint:latest
+  script:
+    - wget https://git.cebb.pro/public-assets/assets/-/raw/main/pylintrc -O pylintrc
+    - echo "================================================================="
+    - pylint **/*.py
+    - echo "================================================================="
+  except:
+    - _package
+
+update-package:
+  stage: update
+  image: python:3.12-slim
+  script:
+    - source ./ci-jobs/update-package.sh
+  only:
+    - main
+
+update-package-branch:
+  stage: update
+  variables:
+    DEPLOYMENT_BRANCH: _package
+  script:
+    - git config user.name "Max Dubrovin"
+    - git config user.email "max@cebb.pro"
+    - git fetch origin $DEPLOYMENT_BRANCH
+    - git checkout $DEPLOYMENT_BRANCH
+    - git merge $CI_COMMIT_SHA --ff-only
+    - git push https://deploy:$DEPLOYMENT_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git HEAD:$DEPLOYMENT_BRANCH
+  only:
+    - main
