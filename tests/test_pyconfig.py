@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 
 from pyservice.pyconfig.pyconfig import PyConfig
+from pyservice.pyconfig.pyconfig import MicroserviceConfig
 
 current_path = Path(__file__).parent
 
@@ -40,6 +41,8 @@ class PyConfigTestCase(TestCase):
         class MyConfig(PyConfig):
             service_ref = 'my_service'
             api_hostname = 'awesome-api.com'
+            parent_for_artefacts_directory = '/tmp'
+
             downloads_directory = self.tmp_path / 'my-downloads'
             readme_file = self.tmp_path / 'readme.txt'
             tz = timezone('Europe/Moscow')
@@ -102,9 +105,6 @@ class PyConfigTestCase(TestCase):
             value_from_cfg = getattr(self.cfg, key)
             value_from_cfg_class = getattr(self.cfg_cls, key)
             self.assertIsInstance(value_from_cfg, type(value_from_cfg_class))
-            # pylint: disable=W0212
-            if key in self.cfg._cluster_level_options:
-                print(env_key, key)
 
     def test_can_set_any_option_from_string(self):
         # Path:
@@ -127,3 +127,11 @@ class PyConfigTestCase(TestCase):
         config_1.service_ref = 'new_service'
         config_2 = self.cfg_cls()
         self.assertNotEqual(config_2.service_ref, config_1.service_ref)
+
+    def test_creating_artefacts_directories(self):
+        artefacts = self.cfg.artefacts_directory
+        print('#################')
+        print('#################')
+        print(artefacts)
+        print('#################')
+        self.assertTrue(artefacts.is_dir())

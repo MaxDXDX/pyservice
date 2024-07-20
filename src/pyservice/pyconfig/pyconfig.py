@@ -13,40 +13,61 @@ from pytz import tzinfo, timezone
 ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS = 'cluster'
 
 
+def create_if_not_yet(func):
+    def wrapper(*args):
+        path: Path = func(*args)
+        path.mkdir(exist_ok=True)
+        return path
+    return wrapper
+
+
+class ConfigMeta:
+    secret_options = []
+    auto_creating_directories: bool = True
+
+
 class PyConfig:
     """Config class."""
+
+    meta: ConfigMeta
 
     service_ref: str = ''
     env_var_prefix: str = ''
 
-    # cluster-level options (env var prefix should be 'CLUSTER_')
-    rabbitmq_hostname: str = 'mb.cebb.pro'
-    rabbitmq_port: str = '50001'
-    rabbitmq_vhost: str = 'vhost'
-    rabbitmq_username: str = 'admin'
-    rabbitmq_password: str = 'rabbit-initial-password'
+    parent_for_artefacts_directory: Path | str = '/var/opt'
+    directory_for_tmp: Path
+    directory_for_logs: Path
+    directory_for_data: Path
 
-    _directories_should_be_created: bool = True
+    @property
+    @create_if_not_yet
+    def artefacts_directory(self) -> Path:
+        parent = Path(self.parent_for_artefacts_directory)
+        return parent / self.service_ref
 
-    _secret_options = [
+    @property
+    @create_if_not_yet
+    def directory_for_tmp(self) -> Path:
+        return self.artefacts_directory / 'tmp'
 
-    ]
+    @property
+    @create_if_not_yet
+    def directory_for_logs(self) -> Path:
+        return self.artefacts_directory / 'logs'
 
-    _cluster_level_options = [
-        'rabbitmq_hostname',
-        'rabbitmq_port',
-        'rabbitmq_vhost',
-        'rabbitmq_username',
-        'rabbitmq_password',
-    ]
+    @property
+    @create_if_not_yet
+    def directory_for_data(self) -> Path:
+        return self.artefacts_directory / 'data'
 
     def disable_auto_creating_directories(self):
-        self._directories_should_be_created = False
+        self.meta.auto_creating_directories = False
 
     def enable_auto_creating_directories(self):
-        self._directories_should_be_created = True
+        self.meta.auto_creating_directories = True
 
     def __init__(self):
+        self.meta = ConfigMeta()
         if not self.env_var_prefix:
             self.env_var_prefix = self.service_ref
         self._validate()
@@ -79,7 +100,8 @@ class PyConfig:
     def __repr__(self):
         rows = []
         for key in self.all_keys:
-            if 'password' in key or 'token' in key:
+            if ('password' in key or 'token' in key
+                    or key in self.meta.secret_options):
                 value = getattr(self, key)
                 first_letter = value[0]
                 last_letter = value[-1]
@@ -118,17 +140,13 @@ class PyConfig:
         return self._class_attributes()
 
     def convert_key_to_env_key(self, key: str):
-        if key in self._cluster_level_options:
-            prefix = ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS
-        else:
-            prefix = self.env_var_prefix
+        prefix = self.env_var_prefix
         return f'{prefix}_{key}'.upper()
 
     def restore_key_from_env_key(self, env_key: str):
         lower = env_key.lower()
         without_prefix = (
-            lower.replace(f'{self.env_var_prefix}_', '')
-            .replace(f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_', ''))
+            lower.replace(f'{self.env_var_prefix}_', ''))
         return without_prefix
 
     @property
@@ -137,7 +155,7 @@ class PyConfig:
 
     def __getattribute__(self, item):
         attr_value = super().__getattribute__(item)
-        if not str(item).startswith('_'):
+        if not str(item).startswith('_') and item != 'meta':
             attr_name = item
             attr_class = type(getattr(type(self), item))
             self._on_get_attribute(attr_name, attr_class, attr_value)
@@ -152,7 +170,7 @@ class PyConfig:
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-        if not str(key).startswith('_'):
+        if not str(key).startswith('_') and key != 'meta':
             attr_class = type(getattr(type(self), key))
             attr_name = key
             value = self._normalize_attribute_value(
@@ -186,3 +204,32 @@ class PyConfig:
             raise ValueError(f'Can not normalize value from string to type: '
                               f'{attr_class}, value - {provided_value}')
         return initiated_from_string
+
+
+class MicroserviceConfig(PyConfig):
+    """Config class for microservice."""
+
+    # cluster-level options (env var prefix should be 'CLUSTER_')
+    rabbitmq_hostname: str = 'mb.cebb.pro'
+    rabbitmq_port: str = '50001'
+    rabbitmq_vhost: str = 'vhost'
+    rabbitmq_username: str = 'admin'
+    rabbitmq_password: str = 'rabbit-initial-password'
+
+    _cluster_level_options = [
+        'rabbitmq_hostname',
+        'rabbitmq_port',
+        'rabbitmq_vhost',
+        'rabbitmq_username',
+        'rabbitmq_password',
+    ]
+
+    def convert_key_to_env_key(self, key: str):
+        if key in self._cluster_level_options:
+            return f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_{key}'.upper()
+        else:
+            return super().convert_key_to_env_key(key)
+
+    def restore_key_from_env_key(self, env_key: str):
+        default = super().restore_key_from_env_key(env_key)
+        return default.replace(f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_', '')
