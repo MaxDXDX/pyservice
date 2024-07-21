@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 from pytz import tzinfo, timezone
+from pyservice.files import files
 
 
 ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS = 'cluster'
@@ -16,14 +17,17 @@ ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS = 'cluster'
 def create_if_not_yet(func):
     def wrapper(*args):
         path: Path = func(*args)
-        path.mkdir(exist_ok=True)
+        path.mkdir(exist_ok=True, parents=True)
         return path
     return wrapper
 
 
 class ConfigMeta:
     secret_options = []
-    auto_creating_directories: bool = True
+    config_location: Path = None
+    # project_directory: Path = None
+
+    # auto_creating_directories: bool = False
 
 
 class PyConfig:
@@ -34,16 +38,60 @@ class PyConfig:
     service_ref: str = ''
     env_var_prefix: str = ''
 
-    parent_for_artefacts_directory: Path | str = '/var/opt'
+    tz = timezone('Europe/Moscow')
+
+    parent_for_service_directory: Path = None
     directory_for_tmp: Path
     directory_for_logs: Path
     directory_for_data: Path
 
+    # def update_service_directory_and_its_parent(self) -> Path | None:
+
+    def create_text_file_in_tmp_directory(
+            self, content: str = None, filename: str = None) -> Path:
+        return files.create_text_file_in_directory(
+            self.directory_for_tmp, content, filename
+        )
+
+    def erase_tmp_directory(self):
+        files.erase_directory(self.directory_for_tmp)
+
+    @property
+    def project_directory(self) -> Path:
+        # pylint: disable=W0612
+        parent_of_project_dir, project_dir = self.base_project_directories
+        return project_dir
+
+    @property
+    def base_project_directories(self) -> tuple[Path, Path]:
+        """The parent for project directory and project directory."""
+        config_location = self.meta.config_location
+        if not config_location:
+            raise ValueError('Can not detect config location!')
+        potential_dir = config_location.parent
+        while True:
+            dirs = files.get_list_of_directories_in_directory(
+                potential_dir, mask='*')
+            for directory in dirs:
+                if directory.name == 'src':
+                    project_dir = directory.parent
+                    new_parent_of_service_dir = project_dir.parent
+                    current_parent = self.parent_for_service_directory
+                    if current_parent and len(str(current_parent)) > 0:
+                        assert current_parent == new_parent_of_service_dir
+                    else:
+                        self.parent_for_service_directory = (
+                            new_parent_of_service_dir)
+                    return new_parent_of_service_dir, project_dir
+                elif directory.name == '/':
+                    raise ValueError(
+                        'Can not detect project dir and its parent!')
+            potential_dir = potential_dir.parent
+
     @property
     @create_if_not_yet
     def artefacts_directory(self) -> Path:
-        parent = Path(self.parent_for_artefacts_directory)
-        return parent / self.service_ref
+        return self.project_directory / 'artefacts'
 
     @property
     @create_if_not_yet
@@ -60,14 +108,17 @@ class PyConfig:
     def directory_for_data(self) -> Path:
         return self.artefacts_directory / 'data'
 
-    def disable_auto_creating_directories(self):
-        self.meta.auto_creating_directories = False
+    # def disable_auto_creating_directories(self):
+    #     self.meta.auto_creating_directories = False
+    #
+    # def enable_auto_creating_directories(self):
+    #     self.meta.auto_creating_directories = True
 
-    def enable_auto_creating_directories(self):
-        self.meta.auto_creating_directories = True
-
-    def __init__(self):
+    def __init__(self, config_file: Path = None):
         self.meta = ConfigMeta()
+        if config_file:
+            self.meta.config_location = Path(config_file)
+            # self.update_parent_for_service_directory()
         if not self.env_var_prefix:
             self.env_var_prefix = self.service_ref
         self._validate()
@@ -85,9 +136,9 @@ class PyConfig:
         self._directories_should_be_created = False
         for option_name in self.all_keys:
             value = getattr(self, option_name)
-            if value is None:
-                raise ValueError(f'config option can not be None: '
-                                 f'{option_name}')
+            # if value is None:
+            #     raise ValueError(f'config option can not be None: '
+            #                      f'{option_name}')
             if isinstance(value, Path):
                 if (('directory' not in option_name) and
                         ('file' not in option_name)):
@@ -158,15 +209,16 @@ class PyConfig:
         if not str(item).startswith('_') and item != 'meta':
             attr_name = item
             attr_class = type(getattr(type(self), item))
-            self._on_get_attribute(attr_name, attr_class, attr_value)
+            self._on_get_config_option(attr_name, attr_class, attr_value)
         return attr_value
 
     # pylint: disable=W0613
-    def _on_get_attribute(self, attr_name, attr_class, attr_value):
-        if isinstance(attr_value, Path):
-            if ('directory' in attr_name and
-                    self._directories_should_be_created):
-                attr_value.mkdir(exist_ok=True)
+    def _on_get_config_option(self, attr_name, attr_class, attr_value):
+        pass
+        # if isinstance(attr_value, Path):
+        #     if ('directory' in attr_name and
+        #             self._directories_should_be_created):
+        #         attr_value.mkdir(exist_ok=True)
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -183,7 +235,7 @@ class PyConfig:
         if provided_value_class is attr_class:
             return provided_value
 
-        if provided_value is None:
+        if provided_value is None or issubclass(attr_class, type(None)):
             return provided_value
 
         if provided_value_class is not str:

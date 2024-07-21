@@ -1,3 +1,6 @@
 dist
 tests/artifacts
+tests/artefacts
+artifacts
+artefacts
 build

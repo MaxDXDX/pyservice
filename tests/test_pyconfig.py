@@ -10,7 +10,7 @@ from pathlib import Path
 import shutil
 
 from pyservice.pyconfig.pyconfig import PyConfig
-from pyservice.pyconfig.pyconfig import MicroserviceConfig
+from pyservice.files import files
 
 current_path = Path(__file__).parent
 
@@ -41,7 +41,7 @@ class PyConfigTestCase(TestCase):
         class MyConfig(PyConfig):
             service_ref = 'my_service'
             api_hostname = 'awesome-api.com'
-            parent_for_artefacts_directory = '/tmp'
+            # parent_for_service_directory = '/tmp'
 
             downloads_directory = self.tmp_path / 'my-downloads'
             readme_file = self.tmp_path / 'readme.txt'
@@ -54,8 +54,37 @@ class PyConfigTestCase(TestCase):
             MyConfig.downloads_directory.rmdir()
         except FileNotFoundError:
             pass
-        self.cfg = MyConfig()
+        self.cfg = MyConfig(config_file=__file__)
         self.cfg_cls = MyConfig
+        self.cfg.erase_tmp_directory()
+
+    def tearDown(self) -> None:
+        self.cfg.erase_tmp_directory()
+
+    def test_if_parent_for_artefact_not_provided_artefacts_is_in_project(self):
+        class MyConfig(PyConfig):
+            service_ref = 'test-service'
+
+        config = MyConfig(__file__)
+        artefacts = config.artefacts_directory
+        artefacts.is_dir()
+        project_dir = config.project_directory
+        self.assertEqual(artefacts.parent, project_dir)
+
+    def test_detect_project_root_and_its_parent(self):
+        project_dir_parent, project_dir = self.cfg.base_project_directories
+        self.assertIsInstance(project_dir_parent, Path)
+        self.assertIsInstance(project_dir, Path)
+        dirs_of_project = files.get_list_of_directories_in_directory(
+            project_dir, mask='*'
+        )
+        dirs_of_project_names = [_.name for _ in dirs_of_project]
+        self.assertIn('src', dirs_of_project_names)
+        self.assertIn('tests', dirs_of_project_names)
+        dirs_of_project_parent = files.get_list_of_directories_in_directory(
+            project_dir_parent, mask='*'
+        )
+        self.assertIn(project_dir, dirs_of_project_parent)
 
     def test_get_config_options(self):
         keys = self.cfg.all_keys
@@ -79,19 +108,19 @@ class PyConfigTestCase(TestCase):
         with self.assertRaises(ValueError):
             IncorrectConfig()
 
-    def test_create_path_attribute_on_first_access_only_for_dir(self):
-        # path not created if read it from class (not from instance)
-        self.assertIsInstance(self.cfg_cls.downloads_directory, Path)
-        self.assertFalse(
-            self.cfg_cls.downloads_directory.is_dir(),
-            msg=str(self.cfg_cls.downloads_directory),
-        )
-        # path created after reading it from config:
-        download_path = self.cfg.downloads_directory
-        self.assertTrue(download_path.is_dir())
-
-        file = self.cfg.readme_file
-        self.assertFalse(file.is_dir())
+    # def test_create_path_attribute_on_first_access_only_for_dir(self):
+    #     # path not created if read it from class (not from instance)
+    #     self.assertIsInstance(self.cfg_cls.downloads_directory, Path)
+    #     self.assertFalse(
+    #         self.cfg_cls.downloads_directory.is_dir(),
+    #         msg=str(self.cfg_cls.downloads_directory),
+    #     )
+    #     # path created after reading it from config:
+    #     download_path = self.cfg.downloads_directory
+    #     self.assertTrue(download_path.is_dir())
+    #
+    #     file = self.cfg.readme_file
+    #     self.assertFalse(file.is_dir())
 
     def test_using_env_vars(self):
         env_keys = self.cfg.keys_from_environment
@@ -104,7 +133,12 @@ class PyConfigTestCase(TestCase):
             self.assertEqual(key, restored)
             value_from_cfg = getattr(self.cfg, key)
             value_from_cfg_class = getattr(self.cfg_cls, key)
-            self.assertIsInstance(value_from_cfg, type(value_from_cfg_class))
+            if key != 'parent_for_service_directory':
+                self.assertIsInstance(
+                    value_from_cfg,
+                    type(value_from_cfg_class),
+                    msg=f'error for: {key}'
+                )
 
     def test_can_set_any_option_from_string(self):
         # Path:
