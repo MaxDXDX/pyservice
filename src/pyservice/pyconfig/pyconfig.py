@@ -59,34 +59,58 @@ class PyConfig:
     @property
     def project_directory(self) -> Path:
         # pylint: disable=W0612
-        parent_of_project_dir, project_dir = self.base_project_directories
+        parent_of_project_dir, project_dir, root_module = (
+            self.base_project_directories)
         return project_dir
 
     @property
-    def base_project_directories(self) -> tuple[Path, Path]:
-        """The parent for project directory and project directory."""
+    def root_module(self) -> Path | None:
+        # pylint: disable=W0612
+        parent_of_project_dir, project_dir, root_module = (
+            self.base_project_directories)
+        return root_module
+
+    @property
+    def root_module_name(self) -> str | None:
+        root_module = self.root_module
+        if root_module:
+            return root_module.name
+
+    @property
+    def base_project_directories(self) -> tuple[Path, Path, Path]:
+        """Detect:
+        - the parent for project directory
+        - project directory
+        - root module of project (the first after <src> directory)
+        """
+        root_module = None
+
         config_location = self.meta.config_location
         if not config_location:
             raise ValueError('Can not detect config location!')
-        potential_dir = config_location.parent
+        current_dir = config_location.parent
+        previous_dir = None
         while True:
+            if current_dir.name == 'src':
+                root_module = previous_dir
             dirs = files.get_list_of_directories_in_directory(
-                potential_dir, mask='*')
+                current_dir, mask='*')
             for directory in dirs:
                 if directory.name == 'src':
                     project_dir = directory.parent
-                    new_parent_of_service_dir = project_dir.parent
+                    parent_of_project_dir = project_dir.parent
                     current_parent = self.parent_for_service_directory
                     if current_parent and len(str(current_parent)) > 0:
-                        assert current_parent == new_parent_of_service_dir
+                        assert current_parent == parent_of_project_dir
                     else:
                         self.parent_for_service_directory = (
-                            new_parent_of_service_dir)
-                    return new_parent_of_service_dir, project_dir
+                            parent_of_project_dir)
+                    return parent_of_project_dir, project_dir, root_module
                 elif directory.name == '/':
                     raise ValueError(
                         'Can not detect project dir and its parent!')
-            potential_dir = potential_dir.parent
+            previous_dir = current_dir
+            current_dir = current_dir.parent
 
     @property
     @create_if_not_yet
@@ -121,8 +145,8 @@ class PyConfig:
             # self.update_parent_for_service_directory()
         if not self.env_var_prefix:
             self.env_var_prefix = self.service_ref
-        self._validate()
         self.override_from_environment()
+        self._validate()
 
     def _validate(self):
         try:
@@ -160,6 +184,14 @@ class PyConfig:
             else:
                 value = getattr(self, key)
             rows.append(f'- {key}: {value}')
+        rows.append('- directories:')
+        rows.append(f'  - root module: {self.root_module}')
+        rows.append(f'  - project dir: {self.project_directory}')
+        rows.append(f'  - parent of project dir: '
+                    f'{self.parent_for_service_directory}')
+        rows.append(f'  - dir for temp: {self.directory_for_tmp}')
+        rows.append(f'  - dir for data: {self.directory_for_data}')
+        rows.append(f'  - dir for logs: {self.directory_for_logs}')
         return '\n'.join(rows)
 
     def override_from_environment(self):
@@ -277,11 +309,14 @@ class MicroserviceConfig(PyConfig):
     ]
 
     def convert_key_to_env_key(self, key: str):
+
         if key in self._cluster_level_options:
-            return f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_{key}'.upper()
+            result = f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_{key}'.upper()
         else:
-            return super().convert_key_to_env_key(key)
+            result = super().convert_key_to_env_key(key)
+        return result
 
     def restore_key_from_env_key(self, env_key: str):
         default = super().restore_key_from_env_key(env_key)
-        return default.replace(f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_', '')
+        result = default.replace(f'{ENV_PREFIX_FOR_CLUSTER_LEVEL_OPTIONS}_', '')
+        return result

@@ -72,7 +72,9 @@ class PyConfigTestCase(TestCase):
         self.assertEqual(artefacts.parent, project_dir)
 
     def test_detect_project_root_and_its_parent(self):
-        project_dir_parent, project_dir = self.cfg.base_project_directories
+        # pylint: disable=W0612
+        project_dir_parent, project_dir, root_module = (
+            self.cfg.base_project_directories)
         self.assertIsInstance(project_dir_parent, Path)
         self.assertIsInstance(project_dir, Path)
         dirs_of_project = files.get_list_of_directories_in_directory(
@@ -164,8 +166,8 @@ class PyConfigTestCase(TestCase):
 
     def test_creating_artefacts_directories(self):
         artefacts = self.cfg.artefacts_directory
-        print('#################')
-        print('#################')
-        print(artefacts)
-        print('#################')
         self.assertTrue(artefacts.is_dir())
+
+    def test_string_representation(self):
+        as_str = str(self.cfg)
+        print(as_str)

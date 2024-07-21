@@ -22,6 +22,7 @@ dependencies = [
     "pytz",
 #    "yattag",
     "aiofiles",
+    "celery",
 #    "python-gnupg",
 #    "celery",
 #    "redis",
