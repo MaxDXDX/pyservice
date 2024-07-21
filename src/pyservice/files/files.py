@@ -40,7 +40,7 @@ def compress_file_or_directory_by_tar(
         output_filename = f'{origin_name}.tar.gz'
         output = output_dir_or_file / output_filename
     else:
-        raise ValueError(f'Can not compress {file_or_directory}')
+        output = output_dir_or_file
 
     with tarfile.open(output, 'w:gz') as tar:
         tar.add(
