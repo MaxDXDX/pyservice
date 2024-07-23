@@ -7,6 +7,18 @@ from celery import Celery
 
 from pyservice.pyconfig.pyconfig import MicroserviceConfig
 from pyservice.manager.manager import MicroServiceManager
+# from pyservice.manager import domain as d
+
+
+# class MicroserviceDomainTestCase(TestCase):
+#     """Domain models."""
+#
+#     def test_microservice(self):
+#         class MyMicroServiceConfig(MicroserviceConfig):
+#             pass
+#
+#         ms = d.Microservice(config=MyMicroServiceConfig(__file__))
+#         self.assertEqual(ms.config.service_ref, 'my-microservice')
 
 
 class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
@@ -15,8 +27,8 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
     def setUp(self) -> None:
 
         class MyConfig(MicroserviceConfig):
-            service_ref = 'my_micro_service'
-        cfg = MyConfig(config_file=__file__)
+            pass
+        cfg = MyConfig(__file__)
         self.mng = MicroServiceManager(cfg)
 
     async def test_check_connection_to_rabbit(self):

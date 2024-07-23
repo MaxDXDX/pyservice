@@ -1,9 +1,13 @@
 """Function for waiting TCP ports."""
 
+import logging
 import asyncio
 import dataclasses
 from datetime import datetime as dt
 from typing import Type
+
+
+log = logging.getLogger()
 
 
 class TcpServiceUnavailable(Exception):
@@ -50,20 +54,24 @@ async def wait_for_tcp_service(
 ) -> TcpService:
     target = normalize_tcp_service(target)
     start_at = dt.now()
-    print(f'start waiting for TCP service {target} for {timeout} seconds:')
+    log.debug('start waiting for TCP service %s for %s seconds:',
+              target, timeout)
     while True:
         try:
-            print(f'try to connect to TCP service {target}...', end='')
+            log.debug('attempt to connect to %s', target.hostname)
             await asyncio.open_connection(target.hostname, target.port)
         except (ConnectionRefusedError, asyncio.TimeoutError, OSError) as e:
-            print(f' NOT READY YET, waiting {check_period} second(s)...')
+            log.debug('it seems that %s is not ready yet, '
+                      'sleeping %s sec. before next attempt',
+                      target, check_period)
             duration = (dt.now() - start_at).total_seconds()
             if duration > timeout:
+                log.exception(e)
                 raise TcpServiceUnavailable(str(target)) from e
             await asyncio.sleep(check_period)
         else:
             target.is_ready = True
-            print(' READY!')
+            log.info('ok - TCP service %s is on wire!', target)
             return target
 
 

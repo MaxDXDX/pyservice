@@ -1,3 +1,2 @@
 """Pyconfig module."""
-
-from .pyconfig import PyConfig, MicroserviceConfig
+from .pyconfig import AppConfig, MicroserviceConfig

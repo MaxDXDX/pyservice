@@ -11,6 +11,14 @@ import aiofiles
 import tarfile
 
 
+def create_if_not_yet(func):
+    def wrapper(*args):
+        path: Path = func(*args)
+        path.mkdir(exist_ok=True, parents=True)
+        return path
+    return wrapper
+
+
 def normalized_path(path: str | Path) -> Path:
     if isinstance(path, str):
         path = Path(path)

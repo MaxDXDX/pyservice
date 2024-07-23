@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pyservice.files import files
 from pyservice import pyconfig
+from pyservice.manager.manager import AppManager
 
 current_path = Path(__file__).parent
 
@@ -15,19 +16,19 @@ class PyConfigTestCase(TestCase):
     """Config tests."""
 
     def setUp(self) -> None:
-        class MyConfig(pyconfig.PyConfig):
-            service_ref = 'test-service'
-            downloads_directory = Path('/tmp')
+        class MyConfig(pyconfig.AppConfig):
+            pass
 
         self.cfg = MyConfig(__file__)
         self.cfg_cls = MyConfig
-        self.cfg.erase_tmp_directory()
+        self.mng = AppManager(self.cfg)
+        self.mng.erase_tmp_directory()
 
     def tearDown(self) -> None:
-        self.cfg.erase_tmp_directory()
+        self.mng.erase_tmp_directory()
 
     def test_tar(self):
-        test_file = self.cfg.create_text_file_in_tmp_directory(
+        test_file = self.mng.create_text_file_in_tmp_directory(
             content='my-content'
         )
         tar_file = files.compress_file_or_directory_by_tar(
