@@ -56,6 +56,11 @@ class AppConfigTestCase(TestCase):
         cfg = ConfigFromEnv(__file__)
         self.assertEqual(cfg.tz, desired_value)
 
+    def test_convert_to_yaml(self):
+        cfg = default_app_config
+        as_yaml = cfg.as_yaml()
+        self.assertIsInstance(as_yaml, str)
+
 
 class MicroserviceTestCase(TestCase):
     """Microservice config tests."""
@@ -64,6 +69,10 @@ class MicroserviceTestCase(TestCase):
         cfg = default_microservice_config
         self.assertTrue(cfg.instance_tag)
 
+    def test_convert_to_yaml(self):
+        cfg = default_microservice_config
+        as_yaml = cfg.as_yaml()
+        self.assertIsInstance(as_yaml, str)
 
 #
 # class OldPyConfigTestCase(TestCase):

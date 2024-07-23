@@ -18,7 +18,6 @@ from celery import Celery
 from celery.result import AsyncResult
 
 
-
 class AppManager:
     """Manager for arbitrary python app."""
 

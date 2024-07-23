@@ -6,8 +6,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from pyservice.files.files import create_if_not_yet
 from pyservice.files import files
 
-from pydantic_settings import BaseSettings
-
+from pyservice.ddd.model import BaseSettings
 
 class AppConfig(BaseSettings):
     """Configuration for arbitrary python app."""

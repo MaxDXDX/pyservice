@@ -26,6 +26,7 @@ dependencies = [
     "pydantic",
     "pydantic_extra_types",
     "pydantic_settings",
+    "PyYAML",
 #    "python-gnupg",
 #    "celery",
 #    "redis",
