@@ -13,6 +13,10 @@ class SerializationMixin:
         as_yaml = yaml.dump(as_dict, sort_keys=False)
         return as_yaml
 
+    def as_dict(self) -> str:
+        as_dict = self.model_dump(mode='json')
+        return as_dict
+
 
 class BaseModel(PydanticBaseModel, SerializationMixin):
     pass

@@ -1,0 +1,22 @@
+services:
+  calculator:
+    restart: always
+    build:
+      context: ./default_microservice
+    networks:
+      cluster:
+
+  rabbit:
+    hostname: rabbit
+    image: rabbitmq:3.13.3-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_VHOST: cluster-vhost
+    networks:
+      cluster:
+
+networks:
+  cluster:
+    name: my-cluster

@@ -19,9 +19,9 @@ class PyConfigTestCase(TestCase):
         class MyConfig(pyconfig.AppConfig):
             pass
 
-        self.cfg = MyConfig(__file__)
+        self.cfg = MyConfig()
         self.cfg_cls = MyConfig
-        self.mng = AppManager(self.cfg)
+        self.mng = AppManager(self.cfg, __file__)
         self.mng.erase_tmp_directory()
 
     def tearDown(self) -> None:
@@ -32,8 +32,8 @@ class PyConfigTestCase(TestCase):
             content='my-content'
         )
         tar_file = files.compress_file_or_directory_by_tar(
-            self.cfg.directory_for_tmp,
-            output_dir_or_file=self.cfg.directory_for_tmp)
+            self.mng.directory_for_tmp,
+            output_dir_or_file=self.mng.directory_for_tmp)
         test_file.unlink()
         self.assertFalse(test_file.is_file())
         files.extract_data_from_tar_archive(
