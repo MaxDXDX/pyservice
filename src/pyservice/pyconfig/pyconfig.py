@@ -24,6 +24,7 @@ class MicroserviceConfig(AppConfig):
     rabbitmq_username: str = 'admin'
     rabbitmq_password: str = 'rabbit-initial-password'
     default_celery_queue: str = 'cluster'
+    tgs_server_url: str = '10.0.80.2:50051'
 
 
 default_app_config = AppConfig()

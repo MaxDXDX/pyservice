@@ -148,6 +148,7 @@ class AppManager:
         file_handler.setLevel('DEBUG')
         log.addHandler(file_handler)
         log.setLevel('DEBUG')
+        log.debug('Logger for %s: %s', pyfile, log)
         return log
 
 

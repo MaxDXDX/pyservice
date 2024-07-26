@@ -19,3 +19,28 @@ class KebabRefMixin:
     def __hash__(self):
         return hash(self.ref)
 
+
+class IdentityMixin:
+    """Identity functionality."""
+
+    @property
+    def _id(self):
+        raise NotImplementedError
+
+    @property
+    def _hash_of_id(self):
+        return hash(self._id)
+
+    def _eq_by_id(self, other) -> bool:
+        try:
+            # pylint: disable=W0212
+            return self._id == other._id
+        except AttributeError:
+            return False
+
+    # if not works - add next two methods to your model:
+    def __hash__(self):
+        return self._hash_of_id
+
+    def __eq__(self, other):
+        return self._eq_by_id(other)

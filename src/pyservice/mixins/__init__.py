@@ -1,3 +1,3 @@
 """Most used entities."""
 
-from .mixins import KebabRefMixin
+from .mixins import KebabRefMixin, IdentityMixin
