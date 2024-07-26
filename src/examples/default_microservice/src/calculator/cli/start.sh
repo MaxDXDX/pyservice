@@ -23,7 +23,7 @@ all_queues=$(python service.py manager all_queues --as_text=True)
 echo "All queues of service: ${all_queues}"
 echo "starting celery with queues: ${all_queues}"
 command_for_restart_celery="celery multi restart w1 -A ${app_ref}:celery_app -l DEBUG --purge -B -Q ${all_queues} --pidfile=${tmp_dir}/%n.pid --logfile=${log_dir}/%n%I.log"
-echo "${command_for_restart_celery}" > restart_celery.sh
+echo "${command_for_restart_celery}" > restart-celery.sh
 celery multi restart w1 -A "${app_ref}:celery_app" -l DEBUG --purge -B -Q "${all_queues}" --pidfile="${tmp_dir}/%n.pid" --logfile="${log_dir}/%n%I.log"
 #celery -A "${app_ref}:celery_app" worker -l INFO --purge -B -Q "${all_queues}"
 echo 'celery started, testing it...'
@@ -31,5 +31,6 @@ python service.py manager check_celery_test_files
 echo 'celery is working!!!'
 ########################################################
 
-#python start.py
+python start.py
+
 tail -f /dev/null

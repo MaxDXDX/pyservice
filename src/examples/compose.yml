@@ -1,10 +1,25 @@
 services:
-  calculator:
+  calculator-1:
     restart: always
+    environment:
+      INSTANCE_TAG: '01'
     build:
       context: ./default_microservice
     networks:
       cluster:
+    depends_on:
+      - rabbit
+
+  calculator-2:
+    restart: always
+    environment:
+      INSTANCE_TAG: '02'
+    build:
+      context: ./default_microservice
+    networks:
+      cluster:
+    depends_on:
+      - rabbit
 
   rabbit:
     hostname: rabbit

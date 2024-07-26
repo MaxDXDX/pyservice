@@ -9,6 +9,7 @@ class AppConfig(BaseSettings):
     """Configuration for arbitrary python app."""
 
     tz: TimeZoneName = 'Europe/Moscow'
+    delete_logs_on_start: bool = True
 
 
 class MicroserviceConfig(AppConfig):

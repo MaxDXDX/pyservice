@@ -12,6 +12,10 @@ class Microservice(BaseModel):
     queues: list[str] = None
     own_queue: str = None
 
+    @property
+    def app_ref(self):
+        return self.ref.partition(':')[0]
+
     def __str__(self):
         return f'Microservice "{self.ref}"'
 

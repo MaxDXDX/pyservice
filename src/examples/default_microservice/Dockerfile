@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install git --yes
 
 ENV SERVICE_DIR='/etc/service'
 COPY src ${SERVICE_DIR}/src
+COPY tests ${SERVICE_DIR}/tests
 COPY pyproject.toml ${SERVICE_DIR}/
 COPY setup.py ${SERVICE_DIR}/
 RUN pip install -e ${SERVICE_DIR}/
@@ -21,5 +22,4 @@ ENV INSTANCE_TAG='first-instance'
 ENV ROUND_TO='3'
 
 WORKDIR ${SERVICE_DIR}/src/calculator/cli
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ENTRYPOINT ["/bin/bash", "start.sh"]

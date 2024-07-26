@@ -29,6 +29,8 @@ class AppManager:
     def __init__(self, config_of_service: AppConfig, origin_file: str | Path):
         self._origin_file = Path(origin_file)
         self.config = config_of_service
+        if self.config.delete_logs_on_start:
+            files.erase_directory(self.directory_for_logs)
         self.log = logging.getLogger(self.app_ref)
         self.log.setLevel(logging.DEBUG)
         fh = logging.FileHandler(
@@ -133,6 +135,21 @@ class AppManager:
     def erase_tmp_directory(self):
         files.erase_directory(self.directory_for_tmp)
 
+    def get_logger_for_pyfile(self, pyfile: str | Path) -> logging.Logger:
+        pyfile = Path(pyfile)
+        stem = pyfile.stem
+        log = logging.getLogger(stem)
+        file_handler = logging.FileHandler(self.directory_for_logs /
+                                           f'{stem}.log')
+        formatter = logging.Formatter(
+            '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel('DEBUG')
+        log.addHandler(file_handler)
+        log.setLevel('DEBUG')
+        return log
+
 
 class MicroServiceManager(AppManager):
     """The manager for microservice."""
@@ -203,7 +220,7 @@ class MicroServiceManager(AppManager):
 
     @property
     def microservice(self) -> Microservice:
-        ref = f'{self.app_ref}__{self.config.instance_tag}'
+        ref = f'{self.app_ref}:{self.config.instance_tag}'
         queues = [
             ref,
             self.app_ref,
@@ -327,52 +344,46 @@ class MicroServiceManager(AppManager):
 
     def get_microservice_from_cluster(self, queue: str = None):
         queue = queue if queue else self.config.default_celery_queue
-        print('sending to: ', queue)
-        result: AsyncResult = self.celery_app.send_task(
-            'service_info',
-            args=(self.microservice.ref, ),
-            queue=queue,
+        serialized = self.execute_celery_task(
+            task_name='service_info',
+            task_args=(self.microservice.ref, ),
+            queue=queue
         )
-        serialized = result.get()
         microservice = Microservice(**serialized)
         return microservice
 
-    def get_all_cluster_microservices(self):
-        pass
-        # current = None
-        # while True:
-        #     next_microservice = self.get_microservice_from_cluster()
-        #
-        #     if current:
+    def get_my_microservice_from_cluster(self):
+        return self.get_microservice_from_cluster(
+            queue=self.microservice.own_queue
+        )
 
-    # def ping_to_everybody(self):
-    #     task_name = f'{self.config.root_module_name}.ping_pong'
-    #     print(f'pinging by task  <{task_name}>...')
-    #     result: AsyncResult = self.celery_app.send_task(
-    #         task_name,
-    #         args=(f'My time is {self.get_now().isoformat()}. '
-    #               f'And that your time?', ),
-    #         queue=self.config.service_ref,
-    #     )
-    #     r = result.get()
-    #     print(f'got answer at {self.get_now().isoformat()}: ', r)
-    #     return r
+    def get_all_cluster_microservices(self) -> set[Microservice]:
+        result = set()
+        first = self.get_microservice_from_cluster()
+        result.add(first)
+        next_one = None
+        while next_one != first:
+            next_one = self.get_microservice_from_cluster()
+            result.add(next_one)
+        return result
 
-    def send_task(self,
-                  task_name: str,
-                  queue: str = None,
-                  wait_result: bool = True,
-                  ):
+    def execute_celery_task(
+            self,
+            task_name: str,
+            task_args: tuple = None,
+            queue: str = None,
+            wait_result: bool = True,
+    ) -> dict:
         if not queue:
-            queue = self.config.ref
-        print(f'sending task <{task_name}> to queue <{queue}> '
+            queue = self.microservice.ref
+        print(f'sending task <{task_name}> (args - {task_args}) '
+              f'to queue <{queue}> '
               f'(wait result: {wait_result})...')
         result: AsyncResult = self.celery_app.send_task(
             task_name,
             queue=queue,
+            args=task_args,
         )
-        print('RESULT type:', type(result))
-        print('RESULT:', result)
         if wait_result:
             r = result.get()
             return r
@@ -387,3 +398,7 @@ class MicroServiceManager(AppManager):
 
 
 default_app_manager = AppManager(default_app_config, __file__)
+
+
+def get_default_app_manager():
+    return AppManager(default_app_config, __file__)
