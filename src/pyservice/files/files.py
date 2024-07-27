@@ -9,6 +9,19 @@ import aiofiles
 import tarfile
 
 
+def format_bytes(size, should_round: bool = True):
+    # 2**10 = 1024
+    power = 2**10
+    n = 0
+    power_labels = {0: '', 1: 'k', 2: 'm', 3: 'g', 4: 't'}
+    while size > power:
+        size /= power
+        n += 1
+    if should_round:
+        size = round(size, 1)
+    return str(size) + power_labels[n] + 'b'
+
+
 def create_if_not_yet(func):
     def wrapper(*args):
         path: Path = func(*args)
@@ -146,8 +159,20 @@ class SetOfFileSystemEntities:
         for _ in self.entity_types:
             setattr(self, _, set())
 
+    @property
+    def total_size_in_bytes(self):
+        file_sizes = [_.stat().st_size for _ in self.files]
+        result = sum(file_sizes)
+        return result
+
+    @property
+    def total_size_for_human(self):
+        return format_bytes(self.total_size_in_bytes)
+
     def __repr__(self):
-        rows = []
+        rows = [
+            f'total size - {self.total_size_for_human}',
+        ]
         for entity_type in self.entity_types:
             entities = getattr(self, entity_type)
             count = len(entities)

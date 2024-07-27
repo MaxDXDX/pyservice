@@ -28,6 +28,9 @@ class FilesTestCase(TestCase):
         project_directory = Path(__file__).parent.parent
         detailed_directory = files.DetailedDirectory(project_directory)
         self.assertTrue(detailed_directory.entities.total_entities)
+        total_size = detailed_directory.entities.total_size_in_bytes
+        self.assertIsInstance(total_size, int)
+        self.assertGreater(total_size, 0)
         without_nested = files.DetailedDirectory(project_directory, mask='*')
         self.assertTrue(
             detailed_directory.entities.total_entities >
@@ -40,6 +43,7 @@ class FilesTestCase(TestCase):
         file_in_dir = empty_dir / 'my-file'
         file_in_dir.touch()
         detailed.parse()
+        self.assertEqual(detailed.entities.total_size_in_bytes, 0)
         self.assertEqual(detailed.entities.total_entities, 1)
 
     def test_tar(self):
