@@ -9,7 +9,6 @@ import aiofiles
 import tarfile
 
 
-
 def create_if_not_yet(func):
     def wrapper(*args):
         path: Path = func(*args)
