@@ -1,14 +1,13 @@
 """
 Common functions for deals with directories and files.
 """
-
-
 import shutil
 import json
 import pathlib
 from pathlib import Path
 import aiofiles
 import tarfile
+
 
 
 def create_if_not_yet(func):
@@ -34,8 +33,11 @@ def normalize_path(func_for_path):
 
 
 def compress_file_or_directory_by_tar(
-        file_or_directory: Path,
-        output_dir_or_file: Path = None) -> Path:
+        file_or_directory: Path | str,
+        output_dir_or_file: Path | str = None) -> Path:
+    file_or_directory = Path(file_or_directory)
+    if output_dir_or_file:
+        output_dir_or_file = Path(output_dir_or_file)
     origin_parent = file_or_directory.parent
     origin_name = file_or_directory.name
 
@@ -106,48 +108,124 @@ def erase_directory(directory: Path):
         shutil.rmtree(_)
 
 
-@normalize_path
-def get_list_of_files_and_directories_in_directory(
-        directory: Path, mask: str = '**/*') -> tuple[list[Path], list[Path]]:
-    all_entities = directory.glob(mask)
-    files = []
-    directories = []
-    for _ in all_entities:
-        if _.is_file():
-            files.append(_)
-        elif _.is_dir():
-            directories.append(_)
-        else:
-            raise ValueError(f'Can not detect the type of <{_}>: '
-                             f'it is not file or directory')
-    return files, directories
+class SetOfFileSystemEntities:
+    """The set of files, dirs and other file-system entities."""
+
+    files: set[Path]
+    directories: set[Path]
+    symlinks: set[Path]
+    sockets: set[Path]
+    char_devices: set[Path]
+    fifos: set[Path]
+    block_devices: set[Path]
+    mounts: set[Path]
+    denied: set[Path]
+    unknown: set[Path]
+
+    entity_types = [
+        'files',
+        'directories',
+        'symlinks',
+        'sockets',
+        'char_devices',
+        'fifos',
+        'block_devices',
+        'mounts',
+        'denied',
+        'unknown',
+    ]
+
+    def __init__(self):
+        self.clear()
+
+    @property
+    def total_entities(self):
+        counts = [len(getattr(self, _)) for _ in self.entity_types]
+        return sum(counts)
+
+    def clear(self):
+        for _ in self.entity_types:
+            setattr(self, _, set())
+
+    def __repr__(self):
+        rows = []
+        for entity_type in self.entity_types:
+            entities = getattr(self, entity_type)
+            count = len(entities)
+            if count:
+                as_text = f'- {entity_type}: {count}'
+                rows.append(as_text)
+        return '\n'.join(rows)
+
+
+class DetailedDirectory:
+    """Full statistic for directory."""
+
+    directory: Path
+    entities: SetOfFileSystemEntities
+    mask: str
+
+    def __init__(self, directory: Path | str, mask: str = '**/*'):
+        self.mask = mask
+        self.entities = SetOfFileSystemEntities()
+        self.directory = Path(directory)
+        self.parse()
+
+    def parse(self):
+        assert self.directory.is_dir()
+        self.entities.clear()
+        unfiltered_entities = list(self.directory.glob(self.mask))
+        for _ in unfiltered_entities:
+            try:
+                if _.is_file():
+                    self.entities.files.add(_)
+                elif _.is_dir():
+                    self.entities.directories.add(_)
+                elif _.is_socket():
+                    self.entities.sockets.add(_)
+                elif _.is_symlink():
+                    self.entities.symlinks.add(_)
+                elif _.is_char_device():
+                    self.entities.symlinks.add(_)
+                elif _.is_fifo():
+                    self.entities.fifos.add(_)
+                elif _.is_block_device():
+                    self.entities.block_devices.add(_)
+                elif _.is_mount():
+                    self.entities.mounts.add(_)
+                else:
+                    self.entities.unknown.add(_)
+            except PermissionError:
+                self.entities.denied.add(_)
+
+    def __repr__(self):
+        header = str(self.directory)
+        content = repr(self.entities)
+        return '\n'.join([header, content])
 
 
 @normalize_path
 def get_list_of_directories_in_directory(
         directory: Path, mask: str = '**/*'
-) -> list[Path]:
-    # pylint: disable=W0612
-    files, directories = get_list_of_files_and_directories_in_directory(
-        directory, mask)
-    return directories
+) -> list[Path] | set[Path]:
+    detailed_dir = DetailedDirectory(directory, mask=mask)
+    return detailed_dir.entities.directories
 
 
 @normalize_path
 def get_list_of_files_in_directory(
         directory: Path, mask: str = '**/*'
-) -> list[Path]:
-    # pylint: disable=W0612
-    files, directories = get_list_of_files_and_directories_in_directory(
-        directory, mask)
-    return files
+) -> list[Path] | set[Path]:
+    detailed_dir = DetailedDirectory(directory, mask=mask)
+    return detailed_dir.entities.files
 
 
 @normalize_path
 def get_number_of_files_and_directories_in_directory(
         directory: Path) -> tuple[int, int]:
-    files, directories = get_list_of_files_and_directories_in_directory(
-        directory)
+    detailed_dir = DetailedDirectory(directory)
+    files = detailed_dir.entities.files
+    directories = detailed_dir.entities.directories
     return len(files), len(directories)
 
 

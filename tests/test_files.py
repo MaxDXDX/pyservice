@@ -12,20 +12,35 @@ from pyservice.manager.manager import AppManager
 current_path = Path(__file__).parent
 
 
-class PyConfigTestCase(TestCase):
-    """Config tests."""
+class FilesTestCase(TestCase):
+    """Files tests."""
 
     def setUp(self) -> None:
-        class MyConfig(pyconfig.AppConfig):
-            pass
 
-        self.cfg = MyConfig()
-        self.cfg_cls = MyConfig
+        self.cfg = pyconfig.AppConfig()
         self.mng = AppManager(self.cfg, __file__)
         self.mng.erase_tmp_directory()
 
     def tearDown(self) -> None:
         self.mng.erase_tmp_directory()
+
+    def test_detailed_directory(self):
+        project_directory = Path(__file__).parent.parent
+        detailed_directory = files.DetailedDirectory(project_directory)
+        self.assertTrue(detailed_directory.entities.total_entities)
+        without_nested = files.DetailedDirectory(project_directory, mask='*')
+        self.assertTrue(
+            detailed_directory.entities.total_entities >
+            without_nested.entities.total_entities
+        )
+        empty_dir = self.mng.directory_for_tmp / 'empty-dir'
+        empty_dir.mkdir()
+        detailed = files.DetailedDirectory(empty_dir)
+        self.assertEqual(detailed.entities.total_entities, 0)
+        file_in_dir = empty_dir / 'my-file'
+        file_in_dir.touch()
+        detailed.parse()
+        self.assertEqual(detailed.entities.total_entities, 1)
 
     def test_tar(self):
         test_file = self.mng.create_text_file_in_tmp_directory(
