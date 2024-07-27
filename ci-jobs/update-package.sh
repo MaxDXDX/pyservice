@@ -13,6 +13,7 @@ echo 'removing existed package...'
 existed_id=$(curl --header "PRIVATE-TOKEN: $api_token" "${CI_API_V4_URL}/projects/${project_id}/packages" | jq .[].id)
 echo "ID of existed package: $existed_id"
 echo "URL for delete: ${CI_API_V4_URL}/projects/${project_id}/packages/${existed_id}"
+echo "full command: curl --request DELETE --header PRIVATE-TOKEN: ${api_token} ${CI_API_V4_URL}/projects/${project_id}/packages/${existed_id}"
 curl --request DELETE --header "PRIVATE-TOKEN: $api_token" "${CI_API_V4_URL}/projects/${project_id}/packages/${existed_id}"
 echo "existed package with ID=${existed_id} removed"
 
