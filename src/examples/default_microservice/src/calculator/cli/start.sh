@@ -9,9 +9,11 @@ printenv && pip list
 echo "========================================================================"
 echo "service config:"
 python service.py config as_yaml
+python service.py manager print_summary
 
 ########## CELERY #####################################:
-python service.py manager print_summary
+python service.py manager test_rabbit_by_pika
+
 tmp_dir=$(python service.py manager directory_for_tmp)
 log_dir=$(python service.py manager directory_for_logs)
 python service.py manager erase_tmp_directory

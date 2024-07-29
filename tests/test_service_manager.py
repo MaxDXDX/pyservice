@@ -83,3 +83,6 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
         self.assertTrue(data.is_dir())
         self.assertTrue(tmp.is_dir())
         self.assertTrue(logs.is_dir())
+
+    def test_test_rabbit_by_pika(self):
+        self.mng.test_rabbit_by_pika()

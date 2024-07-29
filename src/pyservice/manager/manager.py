@@ -2,11 +2,14 @@
 
 
 import asyncio
+import uuid
 from datetime import datetime as dt
 import time
 import logging
 from pathlib import Path
+
 from pytz import timezone
+import pika
 
 from pyservice.pyconfig.pyconfig import (
     AppConfig, MicroserviceConfig, BackuperConfig)
@@ -417,6 +420,44 @@ class MicroServiceManager(AppManager):
         #                             minute=str(config.everyday_backup_min)),
         #     },
         # }
+
+    def _get_connection_to_rabbitmq(self):
+        return pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=self.config.rabbitmq_hostname,
+                port=int(self.config.rabbitmq_port),
+                virtual_host=self.config.rabbitmq_vhost,
+                credentials=pika.PlainCredentials(
+                    username=self.config.rabbitmq_username,
+                    password=self.config.rabbitmq_password,
+                )
+            )
+        )
+
+    def test_rabbit_by_pika(self):
+        print('Checking RabbitMQ by test message...')
+        test_message = f'test message {uuid.uuid4()}'
+        test_queue = f'test-{self.microservice.own_queue}'
+        connection = self._get_connection_to_rabbitmq()
+        channel = connection.channel()
+        channel.queue_delete(queue=test_queue)
+        channel.queue_declare(queue=test_queue)
+        channel.basic_publish(
+            exchange='',
+            routing_key=test_queue,
+            body=test_message,
+        )
+
+        # pylint: disable=W0612
+        method_frame, header_frame, body = channel.basic_get(
+            queue=test_queue,
+            auto_ack=True,
+        )
+        received = body.decode('utf-8')
+        assert test_message == received
+        channel.queue_delete(queue=test_queue)
+        connection.close()
+        print('RabbitMQ is working!')
 
 
 default_app_manager = AppManager(default_app_config, __file__)
