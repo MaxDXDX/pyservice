@@ -8,12 +8,13 @@ import logging
 from pathlib import Path
 from pytz import timezone
 
-from pyservice.pyconfig.pyconfig import AppConfig, MicroserviceConfig
+from pyservice.pyconfig.pyconfig import (
+    AppConfig, MicroserviceConfig, BackuperConfig)
 from pyservice.pyconfig.pyconfig import default_app_config
 from pyservice.tcpwait.tcpwait import wait_for_tcp_service
 from pyservice.files import files
 from pyservice.files.files import create_if_not_yet
-from pyservice.domain.cluster import Microservice
+from pyservice.domain.cluster import Microservice, Backuper, deserialize_microservice
 
 
 from celery import Celery
@@ -227,7 +228,11 @@ class MicroServiceManager(AppManager):
             self.app_ref,
             self.config.default_celery_queue,
         ]
-        m = Microservice(
+        if isinstance(self.config, BackuperConfig):
+            klass = Backuper
+        else:
+            klass = Microservice
+        m = klass(
             config=self.config,
             ref=ref,
             queues=queues,
@@ -343,14 +348,15 @@ class MicroServiceManager(AppManager):
         print(f'got answer at {self.get_now().isoformat()}: ', r)
         return r
 
-    def get_microservice_from_cluster(self, queue: str = None):
+    def get_microservice_from_cluster(
+            self, queue: str = None) -> Microservice | Backuper:
         queue = queue if queue else self.config.default_celery_queue
         serialized = self.execute_celery_task(
             task_name='service_info',
             task_args=(self.microservice.ref, ),
             queue=queue
         )
-        microservice = Microservice(**serialized)
+        microservice = deserialize_microservice(serialized)
         return microservice
 
     def get_my_microservice_from_cluster(self):

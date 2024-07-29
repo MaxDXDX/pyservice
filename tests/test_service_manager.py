@@ -20,8 +20,8 @@ class MicroserviceDomainTestCase(TestCase):
 
     def test_microservice(self):
         service = cluster.Microservice(ref='my-service')
-        clone = cluster.Microservice(ref='my-service',
-                               config=default_microservice_config)
+        clone = cluster.Microservice(
+            ref='my-service', config=default_microservice_config)
         self.assertEqual(service, clone)
         my_cluster: set[cluster.Microservice] = set()
         self.assertEqual(len(my_cluster), 0)
@@ -29,6 +29,15 @@ class MicroserviceDomainTestCase(TestCase):
         self.assertEqual(len(my_cluster), 1)
         my_cluster.add(clone)
         self.assertEqual(len(my_cluster), 1)
+
+    def test_backuper_model(self):
+        backuper = cluster.Backuper(
+            ref='test-backuper',
+            config=cluster.BackuperConfig(),
+        )
+        serialized = backuper.as_dict()
+        restored = cluster.deserialize_microservice(serialized)
+        self.assertEqual(backuper, restored)
 
 
 class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):

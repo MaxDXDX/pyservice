@@ -1,7 +1,8 @@
 """Domain models for app managers."""
 
 from pyservice.domain.base import BaseModel
-from pyservice.pyconfig.pyconfig import MicroserviceConfig
+from pyservice.pyconfig.pyconfig import MicroserviceConfig, BackuperConfig
+from pydantic_core._pydantic_core import ValidationError
 
 
 class Microservice(BaseModel):
@@ -9,8 +10,8 @@ class Microservice(BaseModel):
 
     ref: str
     config: MicroserviceConfig = None
-    queues: list[str] = None
-    own_queue: str = None
+    queues: list[str] = []
+    own_queue: str = 'own-queue'
 
     @property
     def app_ref(self):
@@ -29,6 +30,15 @@ class Microservice(BaseModel):
         return hash(self.ref)
 
 
+class Backuper(Microservice):
+    """Backuper domain model."""
+
+    config: BackuperConfig = None
+
+    def __str__(self):
+        return f'Backuper "{self.ref}"'
+
+
 class Cluster(BaseModel):
     """Cluster domain model."""
 
@@ -36,3 +46,11 @@ class Cluster(BaseModel):
 
     def add_microservice(self, microservice: Microservice):
         self.microservices.add(microservice)
+
+
+def deserialize_microservice(serialized) -> Microservice | Backuper:
+    try:
+        m = Microservice(**serialized)
+    except ValidationError:
+        m = Backuper(**serialized)
+    return m
