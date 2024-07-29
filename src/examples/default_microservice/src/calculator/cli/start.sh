@@ -11,14 +11,13 @@ echo "service config:"
 python service.py config as_yaml
 
 ########## CELERY #####################################:
+python service.py manager print_summary
 tmp_dir=$(python service.py manager directory_for_tmp)
 log_dir=$(python service.py manager directory_for_logs)
+python service.py manager erase_tmp_directory
 # shellcheck disable=SC2115
-rm -rf "${tmp_dir}"/*
+echo "Tmp directory content (must be empty):"
 ls "${tmp_dir}" -al
-echo "- tmp dir: ${tmp_dir}"
-echo "- log_dir: ${log_dir}"
-echo "The name of root module: ${app_ref}"
 all_queues=$(python service.py manager all_queues --as_text=True)
 echo "All queues of service: ${all_queues}"
 echo "starting celery with queues: ${all_queues}"

@@ -135,6 +135,9 @@ class AppManager:
 
     def erase_tmp_directory(self):
         files.erase_directory(self.directory_for_tmp)
+        detailed_tmp = files.DetailedDirectory(self.directory_for_tmp)
+        if detailed_tmp.entities.total_size_in_bytes > 0:
+            raise RuntimeError('Tmp directory is not empty')
 
     def get_logger_for_pyfile(self, pyfile: str | Path) -> logging.Logger:
         pyfile = Path(pyfile)
@@ -151,6 +154,18 @@ class AppManager:
         log.setLevel('DEBUG')
         log.debug('Logger for %s: %s', pyfile, log)
         return log
+
+    def print_summary(self):
+        return (
+            f'App summary:\n'
+            f'Directories:\n'
+            f'- app parent: {self.directory_for_place_app_directory}\n'
+            f'- app: {self.directory_for_app}\n'
+            f'- tmp: {self.directory_for_tmp}\n'
+            f'- data: {self.directory_for_data}\n'
+            f'- logs: {self.directory_for_logs}\n'
+            f'Root module (app ref): {self.app_ref}\n'
+        )
 
 
 class MicroServiceManager(AppManager):
