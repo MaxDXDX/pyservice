@@ -34,6 +34,7 @@ class MicroserviceConfig(AppConfig):
 class BackuperConfig(MicroserviceConfig):
     """Configuration for backuper microservice."""
 
+    app_human_name: str = 'Бэкапер'
     main_service_name: str = 'Service with important data'
     main_service_human_name: str = 'Сервис с важными данными'
     dt_tag_format: str = '%y_%m_%d__%H_%M_%S'

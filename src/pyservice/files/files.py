@@ -161,7 +161,7 @@ class SetOfFileSystemEntities:
 
     @property
     def total_size_in_bytes(self):
-        file_sizes = [_.lstat().st_size for _ in self.files]
+        file_sizes = [_.lstat().st_size for _ in self.files if _.is_file()]
         result = sum(file_sizes)
         return result
 
