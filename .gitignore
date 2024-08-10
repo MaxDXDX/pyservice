@@ -1,8 +1,8 @@
 dist
 tests/artifacts
 tests/artefacts
-artifacts
-artefacts
+artifacts*
+artefacts*
 build
 
 restart-celery.sh

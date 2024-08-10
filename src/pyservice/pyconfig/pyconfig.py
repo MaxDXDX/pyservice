@@ -20,7 +20,7 @@ class MicroserviceConfig(AppConfig):
     instance_tag: str = '01'
     instance_human_name: str = 'Микросервис на Python'
 
-    time_to_wait_celery_test_file: int = 10
+    time_to_wait_celery_test_file: int = 30
 
     rabbitmq_hostname: str = 'mb.cebb.pro'
     rabbitmq_port: str = '50001'

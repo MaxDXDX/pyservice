@@ -33,14 +33,13 @@ class AppManager:
     def __init__(self, config_of_service: AppConfig, origin_file: str | Path):
         self._origin_file = Path(origin_file)
         self.config = config_of_service
-        if self.config.delete_logs_on_start:
-            files.erase_directory(self.directory_for_logs)
         self.log = logging.getLogger(self.app_ref)
         self.log.setLevel(logging.DEBUG)
         fh = logging.FileHandler(
             self.directory_for_logs /
             f'{self.app_ref}-manager.log')
         self.log.addHandler(fh)
+        self.log.debug('--------------------------------------------------')
         self.log.debug('%s manager initiated at %s', self.app_ref, dt.now())
 
     @property
@@ -170,6 +169,20 @@ class AppManager:
             f'Root module (app ref): {self.app_ref}\n'
         )
 
+    def on_start(self):
+        print('performing <on start> operations...')
+        self.log.debug('performing <on start> operations...')
+        ## TODO: logger stops write logs after removing files!
+        # if self.config.delete_logs_on_start:
+        #     current_logs = files.get_list_of_files_in_directory(
+        #         self.directory_for_logs)
+        #     files.erase_directory(self.directory_for_logs)
+        #     print('all logs in directory %s have been deleted: %s',
+        #           self.directory_for_logs, current_logs)
+        self.log.debug('<on start> operations executed!')
+        self.log.info('app %s started!', self.app_ref)
+        print('performing <on start> operations...')
+
 
 class MicroServiceManager(AppManager):
     """The manager for microservice."""
@@ -178,6 +191,15 @@ class MicroServiceManager(AppManager):
     celery_app: Celery = None
 
     microservice: Microservice
+
+    def __init__(
+            self,
+            config_of_microservice: MicroserviceConfig,
+            *args, **kwargs
+    ):
+        super().__init__(config_of_microservice, *args, **kwargs)
+        asyncio.run(self.preflight_checks())
+        self.init_celery_app()
 
     @property
     def celery_test_file(self):
@@ -210,33 +232,38 @@ class MicroServiceManager(AppManager):
 
     def check_celery_test_files(self):
         duration = self.config.time_to_wait_celery_test_file
-        print(f'sleep {duration} seconds before check celery test file...')
-        time.sleep(duration)
-        print('checking celery test files...')
-        test_files = [
-            self.celery_test_file,
-            self.celery_test_file_2,
-        ]
-        for test_file in test_files:
-            try:
-                with open(test_file, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    assert 'this is a test file!' in content
+        is_passed = False
+        current_attempt = 0
+        print(f'checking celery test files (time limit - {duration}) ...')
+        while not is_passed:
+            print(f'current attempt - {current_attempt}/{duration} ...')
+            test_files = [
+                self.celery_test_file,
+                self.celery_test_file_2,
+            ]
+            is_passed = True
+            for test_file in test_files:
+                try:
+                    with open(test_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        assert 'this is a test file!' in content
 
-                with open(test_file, 'a', encoding='utf-8') as f:
-                    msg = f'\ncheck passed at {dt.now().isoformat()}'
-                    content = f.write(msg)
-            except FileNotFoundError as e:
-                raise RuntimeError('Celery is not working!') from e
+                    with open(test_file, 'a', encoding='utf-8') as f:
+                        msg = f'\ncheck passed at {dt.now().isoformat()}'
+                        f.write(msg)
+                except FileNotFoundError:
+                    is_passed = False
+                else:
+                    is_passed = is_passed and True
 
-    def __init__(
-            self,
-            config_of_microservice: MicroserviceConfig,
-            *args, **kwargs
-    ):
-        super().__init__(config_of_microservice, *args, **kwargs)
-        asyncio.run(self.preflight_checks())
-        self.init_celery_app()
+            if not is_passed:
+                if current_attempt > duration:
+                    raise RuntimeError('Celery is not working!')
+                else:
+                    time.sleep(1)
+                    current_attempt += 1
+
+        print('All good! Celery is working fine!')
 
     @property
     def microservice(self) -> Microservice:
@@ -280,57 +307,68 @@ class MicroServiceManager(AppManager):
         await self.check_connection_to_rabbit_mq()
 
     def get_celery_app(self) -> Celery:
-        schedule_file = self.directory_for_tmp / 'celery-beat-schedule'
-        manager = self
+        self.log.debug('getting celery app...')
+        try:
+            schedule_file = self.directory_for_tmp / 'celery-beat-schedule'
+            manager = self
 
-        class CeleryForMicroservice(Celery):
-            # pylint: disable=W0613
-            def gen_task_name(self, name, module):
-                return f'{manager.app_ref}.{name}'
+            class CeleryForMicroservice(Celery):
+                # pylint: disable=W0613
+                def gen_task_name(self, name, module):
+                    return f'{manager.app_ref}.{name}'
 
-        app = CeleryForMicroservice(self.microservice.ref)
-        broker_url = (f'amqp://'
-                      f'{self.config.rabbitmq_username}:'
-                      f'{self.config.rabbitmq_password}'
-                      f'@{self.config.rabbitmq_hostname}:'
-                      f'{self.config.rabbitmq_port}'
-                      f'/{self.config.rabbitmq_vhost}')
+            app = CeleryForMicroservice(self.microservice.ref)
+            broker_url = (f'amqp://'
+                          f'{self.config.rabbitmq_username}:'
+                          f'{self.config.rabbitmq_password}'
+                          f'@{self.config.rabbitmq_hostname}:'
+                          f'{self.config.rabbitmq_port}'
+                          f'/{self.config.rabbitmq_vhost}')
 
-        app.conf.update(
-            enable_utc=True,
-            timezone=str(self.config.tz),
-            broker_url=broker_url,
-            result_backend='rpc',
-            imports=(
-                f'{self.app_ref}.celery_tasks.tasks',
-            ),
-            beat_schedule_filename=schedule_file,
-            task_default_queue=self.config.default_celery_queue,
-        )
+            app.conf.update(
+                enable_utc=True,
+                timezone=str(self.config.tz),
+                broker_url=broker_url,
+                result_backend='rpc',
+                imports=(
+                    f'{self.app_ref}.celery_tasks.tasks',
+                ),
+                beat_schedule_filename=schedule_file,
+                task_default_queue=self.config.default_celery_queue,
+            )
 
-        @app.task
-        def create_test_file():
-            self.write_celery_test_file()
+            @app.task
+            def self_check():
+                # TODO: add checks
+                self.log.info('Selfcheck for service %s has been passed',
+                              self.app_ref)
 
-        @app.task(name='ping_pong')
-        def ping_pong(message_from_publisher):
-            # log.info('ping_pong started')
-            now = self.get_now()
-            # log.info('message_from_publisher: %s', message_from_publisher)
-            answer = (f'I am the {self.microservice.ref} service. '
-                      f'I have got your message - "{message_from_publisher}" '
-                      f'at {now.isoformat()}.')
-            result = answer
-            # log.info('ping_pong executed with result: %s', result)
-            return result
+            @app.task
+            def create_test_file():
+                self.write_celery_test_file()
 
-        @app.task(name='service_info')
-        def service_info(publisher):
-            print(publisher)
-            result = self.microservice.as_dict()
-            return result
+            # arg 'name' is used to bypass adding app prefix
+            # to task_name (this is a global task)
+            @app.task(name='service_info')
+            def service_info(publisher):
+                self.log.debug('<%s> have been requested '
+                               'service_info', publisher)
+                result = self.microservice.as_dict()
+                return result
 
-        return app
+            app.conf.beat_schedule = {
+                'periodic-selfscheck': {
+                    'task': f'{self.app_ref}.self_check',
+                    'schedule': 5.0,
+                },
+            }
+
+        except Exception as e:
+            self.log.exception('Error during initializing celery app!')
+            raise e
+        else:
+            self.log.debug('celery app initialized successfully')
+            return app
 
     def on_celery_worker_ready(self, sender):
         with sender.app.connection() as conn:
