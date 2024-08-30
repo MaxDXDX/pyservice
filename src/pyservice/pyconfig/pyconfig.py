@@ -60,3 +60,4 @@ class BackuperConfig(MicroserviceConfig):
 
 default_app_config = AppConfig()
 default_microservice_config = MicroserviceConfig()
+default_backuper_config = BackuperConfig()

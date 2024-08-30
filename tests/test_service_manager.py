@@ -86,3 +86,13 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
 
     def test_test_rabbit_by_pika(self):
         self.mng.test_rabbit_by_pika()
+
+    def test_get_all_microservices(self):
+        all_microservices = self.mng.get_all_cluster_microservices()
+        self.assertIsInstance(all_microservices, set)
+
+    def test_get_microservice_bad_path(self):
+        result = self.mng.get_microservice_from_cluster(
+            queue='unreal-queue'
+        )
+        self.assertEqual(result, None)

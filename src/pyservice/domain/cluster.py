@@ -2,6 +2,9 @@
 
 from pyservice.domain.base import BaseModel
 from pyservice.pyconfig.pyconfig import MicroserviceConfig, BackuperConfig
+from pyservice.pyconfig.pyconfig import default_app_config
+from pyservice.pyconfig.pyconfig import default_microservice_config
+from pyservice.pyconfig.pyconfig import default_backuper_config
 from pydantic_core._pydantic_core import ValidationError
 
 
@@ -32,7 +35,6 @@ class Microservice(BaseModel):
 
 class Backuper(Microservice):
     """Backuper domain model."""
-
     config: BackuperConfig = None
 
     def __str__(self):
@@ -54,3 +56,15 @@ def deserialize_microservice(serialized) -> Microservice | Backuper:
     except ValidationError:
         m = Backuper(**serialized)
     return m
+
+
+class Examples:
+    BACKUPER_1 = Backuper(
+        ref='test-backuper-1',
+        config=default_backuper_config
+    )
+    BACKUPER_2 = Backuper(
+        ref='test-backuper-2',
+        config=default_backuper_config
+    )
+    # BACKUPER = Backuper(config={'sdsd': 'sdasd'})

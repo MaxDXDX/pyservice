@@ -8,6 +8,7 @@ import time
 import logging
 from pathlib import Path
 
+import celery.exceptions
 from pytz import timezone
 import pika
 
@@ -126,8 +127,14 @@ class AppManager:
     def timezone(self):
         return timezone(self.config.tz)
 
-    def get_now(self) -> dt:
-        return dt.now(tz=self.timezone)
+    def get_now(self, human_readable: bool = False) -> dt:
+        now = dt.now(tz=self.timezone)
+        if not human_readable:
+            return now
+        else:
+            dt_format = "%d.%m.%y %H:%M (%Z)"
+            as_text = now.strftime(dt_format)
+            return as_text
 
     def create_text_file_in_tmp_directory(
             self, content: str = None, filename: str = None) -> Path:
@@ -349,7 +356,7 @@ class MicroServiceManager(AppManager):
 
             # arg 'name' is used to bypass adding app prefix
             # to task_name (this is a global task)
-            @app.task(name='service_info')
+            @app.task(name='service_info', time_limit=10)
             def service_info(publisher):
                 self.log.debug('<%s> have been requested '
                                'service_info', publisher)
@@ -405,13 +412,20 @@ class MicroServiceManager(AppManager):
         return r
 
     def get_microservice_from_cluster(
-            self, queue: str = None) -> Microservice | Backuper:
+            self, queue: str = None) -> Microservice | Backuper | None:
         queue = queue if queue else self.config.default_celery_queue
-        serialized = self.execute_celery_task(
-            task_name='service_info',
-            task_args=(self.microservice.ref, ),
-            queue=queue
-        )
+        self.log.debug('try to get microservice from cluster by queue "%s"', queue)
+        try:
+            serialized = self.execute_celery_task(
+                task_name='service_info',
+                task_args=(self.microservice.ref, ),
+                queue=queue,
+                timeout=3,
+            )
+        except celery.exceptions.TimeoutError:
+            logging.warning('can not find microservice with queue %s', queue)
+            return None
+        self.log.debug('found microservice: %s', serialized)
         microservice = deserialize_microservice(serialized)
         return microservice
 
@@ -436,6 +450,7 @@ class MicroServiceManager(AppManager):
             task_args: tuple = None,
             queue: str = None,
             wait_result: bool = True,
+            timeout: int = None,
     ) -> dict:
         if not queue:
             queue = self.microservice.ref
@@ -448,7 +463,7 @@ class MicroServiceManager(AppManager):
             args=task_args,
         )
         if wait_result:
-            r = result.get()
+            r = result.get(timeout=timeout)
             return r
 
         # app.conf.beat_schedule = {
