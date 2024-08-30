@@ -2,8 +2,6 @@
 
 from pyservice.domain.base import BaseModel
 from pyservice.pyconfig.pyconfig import MicroserviceConfig, BackuperConfig
-from pyservice.pyconfig.pyconfig import default_app_config
-from pyservice.pyconfig.pyconfig import default_microservice_config
 from pyservice.pyconfig.pyconfig import default_backuper_config
 from pydantic_core._pydantic_core import ValidationError
 

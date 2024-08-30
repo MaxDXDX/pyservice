@@ -132,7 +132,7 @@ class AppManager:
         if not human_readable:
             return now
         else:
-            dt_format = "%d.%m.%y %H:%M (%Z)"
+            dt_format = '%d.%m.%y %H:%M (%Z)'
             as_text = now.strftime(dt_format)
             return as_text
 
@@ -414,7 +414,8 @@ class MicroServiceManager(AppManager):
     def get_microservice_from_cluster(
             self, queue: str = None) -> Microservice | Backuper | None:
         queue = queue if queue else self.config.default_celery_queue
-        self.log.debug('try to get microservice from cluster by queue "%s"', queue)
+        self.log.debug('try to get microservice from cluster '
+                       'by queue "%s"', queue)
         try:
             serialized = self.execute_celery_task(
                 task_name='service_info',
