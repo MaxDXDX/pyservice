@@ -1,12 +1,17 @@
 """
 Common functions for deals with directories and files.
 """
+
 import shutil
 import json
 import pathlib
 from pathlib import Path
+from typing import Any
+
 import aiofiles
 import tarfile
+
+from pyservice.domain.base import BaseModel
 
 
 def format_bytes(size, should_round: bool = True):
@@ -120,21 +125,21 @@ def erase_directory(directory: Path):
         shutil.rmtree(_)
 
 
-class SetOfFileSystemEntities:
+class SetOfFileSystemEntities(BaseModel):
     """The set of files, dirs and other file-system entities."""
 
-    files: set[Path]
-    directories: set[Path]
-    symlinks: set[Path]
-    sockets: set[Path]
-    char_devices: set[Path]
-    fifos: set[Path]
-    block_devices: set[Path]
-    mounts: set[Path]
-    denied: set[Path]
-    unknown: set[Path]
+    files: set[Path] = set()
+    directories: set[Path] = set()
+    symlinks: set[Path] = set()
+    sockets: set[Path] = set()
+    char_devices: set[Path] = set()
+    fifos: set[Path] = set()
+    block_devices: set[Path] = set()
+    mounts: set[Path] = set()
+    denied: set[Path] = set()
+    unknown: set[Path] = set()
 
-    entity_types = [
+    entity_types: list[str] = [
         'files',
         'directories',
         'symlinks',
@@ -147,7 +152,8 @@ class SetOfFileSystemEntities:
         'unknown',
     ]
 
-    def __init__(self):
+    # pylint:disable=C0103
+    def model_post_init(self, __context: Any) -> None:
         self.clear()
 
     @property
@@ -182,18 +188,24 @@ class SetOfFileSystemEntities:
         return '\n'.join(rows)
 
 
-class DetailedDirectory:
+class DetailedDirectory(BaseModel):
     """Full statistic for directory."""
 
     directory: Path
-    entities: SetOfFileSystemEntities
-    mask: str
+    entities: SetOfFileSystemEntities = None
+    mask: str = '**/*'
 
-    def __init__(self, directory: Path | str, mask: str = '**/*'):
-        self.mask = mask
+    # pylint:disable=C0103
+    def model_post_init(self, __context: Any) -> None:
+        super().model_post_init(__context)
         self.entities = SetOfFileSystemEntities()
-        self.directory = Path(directory)
         self.parse()
+
+   # def __init__(self, directory: Path | str, mask: str = '**/*'):
+    #     self.mask = mask
+    #     self.entities = SetOfFileSystemEntities()
+    #     self.directory = Path(directory)
+    #     self.parse()
 
     def parse(self):
         assert self.directory.is_dir()
@@ -232,7 +244,7 @@ class DetailedDirectory:
 def get_list_of_directories_in_directory(
         directory: Path, mask: str = '**/*'
 ) -> list[Path] | set[Path]:
-    detailed_dir = DetailedDirectory(directory, mask=mask)
+    detailed_dir = DetailedDirectory(directory=directory, mask=mask)
     return detailed_dir.entities.directories
 
 
@@ -240,14 +252,14 @@ def get_list_of_directories_in_directory(
 def get_list_of_files_in_directory(
         directory: Path, mask: str = '**/*'
 ) -> list[Path] | set[Path]:
-    detailed_dir = DetailedDirectory(directory, mask=mask)
+    detailed_dir = DetailedDirectory(directory=directory, mask=mask)
     return detailed_dir.entities.files
 
 
 @normalize_path
 def get_number_of_files_and_directories_in_directory(
         directory: Path) -> tuple[int, int]:
-    detailed_dir = DetailedDirectory(directory)
+    detailed_dir = DetailedDirectory(directory=directory)
     files = detailed_dir.entities.files
     directories = detailed_dir.entities.directories
     return len(files), len(directories)

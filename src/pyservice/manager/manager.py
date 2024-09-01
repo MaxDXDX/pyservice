@@ -144,7 +144,8 @@ class AppManager:
 
     def erase_tmp_directory(self):
         files.erase_directory(self.directory_for_tmp)
-        detailed_tmp = files.DetailedDirectory(self.directory_for_tmp)
+        detailed_tmp = files.DetailedDirectory(
+            directory=self.directory_for_tmp)
         if detailed_tmp.entities.total_size_in_bytes > 0:
             raise RuntimeError('Tmp directory is not empty')
 

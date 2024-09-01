@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings as PydanticBaseSettings
 
 import yaml
 
+from pyservice.mixins.mixins import IdentityMixin
 
 class SerializationMixin:
     """Serialization."""
@@ -26,6 +27,15 @@ class SerializationMixin:
 
 class BaseModel(PydanticBaseModel, SerializationMixin):
     pass
+
+
+class BaseEntity(PydanticBaseModel, SerializationMixin, IdentityMixin):
+    def __hash__(self):
+        assert self._hash_of_id
+        return self._hash_of_id
+
+    def __eq__(self, other):
+        return self._eq_by_id(other)
 
 
 class BaseSettings(PydanticBaseSettings, SerializationMixin):

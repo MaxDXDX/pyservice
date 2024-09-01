@@ -26,19 +26,21 @@ class FilesTestCase(TestCase):
 
     def test_detailed_directory(self):
         project_directory = Path(__file__).parent.parent
-        detailed_directory = files.DetailedDirectory(project_directory)
+        detailed_directory = files.DetailedDirectory(
+            directory=project_directory)
         self.assertTrue(detailed_directory.entities.total_entities)
         total_size = detailed_directory.entities.total_size_in_bytes
         self.assertIsInstance(total_size, int)
         self.assertGreater(total_size, 0)
-        without_nested = files.DetailedDirectory(project_directory, mask='*')
+        without_nested = files.DetailedDirectory(
+            directory=project_directory, mask='*')
         self.assertTrue(
             detailed_directory.entities.total_entities >
             without_nested.entities.total_entities
         )
         empty_dir = self.mng.directory_for_tmp / 'empty-dir'
         empty_dir.mkdir()
-        detailed = files.DetailedDirectory(empty_dir)
+        detailed = files.DetailedDirectory(directory=empty_dir)
         self.assertEqual(detailed.entities.total_entities, 0)
         file_in_dir = empty_dir / 'my-file'
         file_in_dir.touch()
