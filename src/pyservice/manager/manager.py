@@ -422,7 +422,7 @@ class MicroServiceManager(AppManager):
                 task_name='service_info',
                 task_args=(self.microservice.ref, ),
                 queue=queue,
-                timeout=3,
+                timeout=20,
             )
         except celery.exceptions.TimeoutError:
             logging.warning('can not find microservice with queue %s', queue)
