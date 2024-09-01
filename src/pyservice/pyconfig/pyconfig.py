@@ -37,7 +37,7 @@ class BackuperConfig(MicroserviceConfig):
     app_human_name: str = 'Бэкапер'
     main_service_name: str = 'Service with important data'
     main_service_human_name: str = 'Сервис с важными данными'
-    dt_tag_format: str = '%y%m%d-%H%M%S'
+    dt_tag_format: str = '%y%m%d-%H%M%S%z'
     directory_name_with_data_to_backup: str = 'data_to_backup'
     directory_name_for_local_store_backups: str = 'backups'
     number_of_stored_backups_on_local: int = 2
