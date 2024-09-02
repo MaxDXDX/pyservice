@@ -149,12 +149,19 @@ class AppManager:
         if detailed_tmp.entities.total_size_in_bytes > 0:
             raise RuntimeError('Tmp directory is not empty')
 
-    def get_logger_for_pyfile(self, pyfile: str | Path) -> logging.Logger:
+    def get_logger_for_pyfile(
+            self,
+            pyfile: str | Path,
+            with_path: bool = False,
+    ) -> logging.Logger:
         pyfile = Path(pyfile)
         stem = pyfile.stem
-        log = logging.getLogger(stem)
+        path = str(pyfile.parent).partition('/src/')[2]
+        with_parent = f'{path}/{stem}'.replace('/', '.')
+        log_name = with_parent if with_path else stem
+        log = logging.getLogger(log_name)
         file_handler = logging.FileHandler(self.directory_for_logs /
-                                           f'{stem}.log')
+                                           f'{log_name}.log')
         formatter = logging.Formatter(
             '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
         )
