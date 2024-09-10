@@ -96,3 +96,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
             queue='unreal-queue'
         )
         self.assertEqual(result, None)
+
+    def test_get_logger(self):
+        log = self.mng.get_logger_for_pyfile(__file__)
+        log.debug('test log record')

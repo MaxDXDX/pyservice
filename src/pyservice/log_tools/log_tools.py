@@ -1,0 +1,88 @@
+"""Tool for loggers."""
+import inspect
+from logging import FileHandler, Logger, getLogger, Formatter
+from pathlib import Path
+
+
+def get_file_of_logger(logger: Logger) -> Path:
+    log_file = next(filter(
+        lambda h: isinstance(h, FileHandler),
+        logger.handlers)).baseFilename
+    return Path(log_file)
+
+
+def clean_file_for_logger(logger: Logger) -> Path:
+    log_file = get_file_of_logger(logger)
+    with open(log_file, 'w', encoding='utf-8') as f:
+        f.write('')
+    return log_file
+
+
+def get_content_of_log_file_of_logger(logger: Logger) -> str:
+    log_file = get_file_of_logger(logger)
+    with open(log_file, 'r', encoding='utf-8') as f:
+        return f.read()
+
+
+def get_logger_for_pyfile(
+        pyfile: str | Path,
+        directory_for_logs: Path,
+        with_path: bool = False,
+        erase: bool = True,
+        indented: bool = True,
+) -> Logger:
+    pyfile = Path(pyfile)
+    stem = pyfile.stem
+    path = str(pyfile.parent).partition('/src/')[2]
+    with_parent = f'{path}/{stem}'.replace('/', '.')
+    log_name = with_parent if with_path else stem
+    logger = get_logger(
+        log_name=log_name,
+        directory_for_logs=directory_for_logs,
+        erase=erase,
+        indented=indented,
+    )
+    logger.debug('Logger for %s: %s', pyfile, logger)
+    return logger
+
+
+def indented_decorator(func):
+
+    def wrapper(*args, **kwargs):
+        if args and isinstance(args[0], str):
+
+            frames = inspect.getouterframes(inspect.currentframe())
+            filtered = [frame for frame in frames if 'src' in frame.filename]
+            levels = len(filtered)
+            indent = levels * '='
+
+            args_as_list = list(args)
+            msg = f'{indent}{args[0]}'
+            args_as_list[0] = msg
+            args = tuple(args_as_list)
+        func(*args, **kwargs)
+    return wrapper
+
+
+def get_logger(
+        log_name: str,
+        directory_for_logs: Path,
+        erase: bool = True,
+        indented: bool = True,
+) -> Logger:
+    log = getLogger(log_name)
+    if indented:
+        log.debug = indented_decorator(log.debug)
+    log_file = directory_for_logs / f'{log_name}.log'
+    if erase and log_file.is_file():
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write('')
+    file_handler = FileHandler(log_file)
+    formatter = Formatter(
+        '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel('DEBUG')
+    log.addHandler(file_handler)
+    log.setLevel('DEBUG')
+    return log

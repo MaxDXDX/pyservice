@@ -19,6 +19,7 @@ from pyservice.tcpwait.tcpwait import wait_for_tcp_service
 from pyservice.files import files
 from pyservice.files.files import create_if_not_yet
 from pyservice.domain.cluster import Microservice, Backuper, deserialize_microservice
+from pyservice.log_tools import log_tools
 
 
 from celery import Celery
@@ -34,6 +35,9 @@ class AppManager:
     def __init__(self, config_of_service: AppConfig, origin_file: str | Path):
         self._origin_file = Path(origin_file)
         self.config = config_of_service
+
+        self.set_root_logger()
+
         self.log = logging.getLogger(self.app_ref)
         self.log.setLevel(logging.DEBUG)
         fh = logging.FileHandler(
@@ -42,6 +46,26 @@ class AppManager:
         self.log.addHandler(fh)
         self.log.debug('--------------------------------------------------')
         self.log.debug('%s manager initiated at %s', self.app_ref, dt.now())
+
+    def set_root_logger(self):
+        log = logging.getLogger('root')
+        file_handler = logging.FileHandler(self.directory_for_logs /
+                                           f'root.log')
+        formatter = logging.Formatter(
+            '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel('DEBUG')
+        log.addHandler(file_handler)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel('DEBUG')
+        log.addHandler(console_handler)
+
+        log.setLevel('DEBUG')
+        log.debug('Logger for root: %s', log)
+
 
     @property
     def directory_for_place_app_directory(self):
@@ -154,23 +178,13 @@ class AppManager:
             pyfile: str | Path,
             with_path: bool = False,
     ) -> logging.Logger:
-        pyfile = Path(pyfile)
-        stem = pyfile.stem
-        path = str(pyfile.parent).partition('/src/')[2]
-        with_parent = f'{path}/{stem}'.replace('/', '.')
-        log_name = with_parent if with_path else stem
-        log = logging.getLogger(log_name)
-        file_handler = logging.FileHandler(self.directory_for_logs /
-                                           f'{log_name}.log')
-        formatter = logging.Formatter(
-            '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
+        logger = log_tools.get_logger_for_pyfile(
+            pyfile=pyfile,
+            directory_for_logs=self.directory_for_logs,
+            with_path=with_path,
+            erase=True,
         )
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel('DEBUG')
-        log.addHandler(file_handler)
-        log.setLevel('DEBUG')
-        log.debug('Logger for %s: %s', pyfile, log)
-        return log
+        return logger
 
     def print_summary(self):
         return (
