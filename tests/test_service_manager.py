@@ -99,4 +99,13 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
 
     def test_get_logger(self):
         log = self.mng.get_logger_for_pyfile(__file__)
-        log.debug('test log record')
+
+        def inner_func():
+            log.debug('record from inner function')
+
+        def my_func():
+            log.debug('record from main function')
+            inner_func()
+            log.debug('another record from main function')
+
+        my_func()

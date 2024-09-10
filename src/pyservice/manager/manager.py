@@ -48,23 +48,12 @@ class AppManager:
         self.log.debug('%s manager initiated at %s', self.app_ref, dt.now())
 
     def set_root_logger(self):
-        log = logging.getLogger('root')
-        file_handler = logging.FileHandler(self.directory_for_logs /
-                                           f'root.log')
-        formatter = logging.Formatter(
-            '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
+        root_log = log_tools.get_logger(
+            log_name='root',
+            directory_for_logs=self.directory_for_logs,
+            erase=self.config.delete_logs_on_start,
         )
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel('DEBUG')
-        log.addHandler(file_handler)
-
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        console_handler.setLevel('DEBUG')
-        log.addHandler(console_handler)
-
-        log.setLevel('DEBUG')
-        log.debug('Logger for root: %s', log)
+        log_tools.remove_all_stream_handlers(logger=root_log)
 
 
     @property
@@ -182,7 +171,7 @@ class AppManager:
             pyfile=pyfile,
             directory_for_logs=self.directory_for_logs,
             with_path=with_path,
-            erase=True,
+            erase=self.config.delete_logs_on_start,
         )
         return logger
 

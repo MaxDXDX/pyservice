@@ -1,6 +1,6 @@
 """Tool for loggers."""
 import inspect
-from logging import FileHandler, Logger, getLogger, Formatter
+from logging import StreamHandler, FileHandler, Logger, getLogger, Formatter
 from pathlib import Path
 
 
@@ -18,6 +18,14 @@ def clean_file_for_logger(logger: Logger) -> Path:
     return log_file
 
 
+def remove_all_stream_handlers(logger: Logger):
+    all_handlers = logger.handlers
+    # pylint:disable=C0123
+    matched = [_ for _ in all_handlers if type(_) == StreamHandler]
+    for _ in matched:
+        logger.removeHandler(_)
+
+
 def get_content_of_log_file_of_logger(logger: Logger) -> str:
     log_file = get_file_of_logger(logger)
     with open(log_file, 'r', encoding='utf-8') as f:
@@ -29,7 +37,6 @@ def get_logger_for_pyfile(
         directory_for_logs: Path,
         with_path: bool = False,
         erase: bool = True,
-        indented: bool = True,
 ) -> Logger:
     pyfile = Path(pyfile)
     stem = pyfile.stem
@@ -40,7 +47,6 @@ def get_logger_for_pyfile(
         log_name=log_name,
         directory_for_logs=directory_for_logs,
         erase=erase,
-        indented=indented,
     )
     logger.debug('Logger for %s: %s', pyfile, logger)
     return logger
@@ -50,7 +56,6 @@ def indented_decorator(func):
 
     def wrapper(*args, **kwargs):
         if args and isinstance(args[0], str):
-
             frames = inspect.getouterframes(inspect.currentframe())
             filtered = [frame for frame in frames if 'src' in frame.filename]
             levels = len(filtered)
@@ -68,21 +73,23 @@ def get_logger(
         log_name: str,
         directory_for_logs: Path,
         erase: bool = True,
-        indented: bool = True,
 ) -> Logger:
     log = getLogger(log_name)
-    if indented:
-        log.debug = indented_decorator(log.debug)
+    # if indented:
+    #     log.debug = indented_decorator(log.debug)
     log_file = directory_for_logs / f'{log_name}.log'
     if erase and log_file.is_file():
         with open(log_file, 'w', encoding='utf-8') as f:
             f.write('')
-    file_handler = FileHandler(log_file)
-    formatter = Formatter(
-        '%(asctime)s %(name)-10s - %(levelname)-5s - %(message)s'
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel('DEBUG')
-    log.addHandler(file_handler)
+    # pylint:disable=C0123
+    current_file_handlers = [_ for _ in log.handlers if type(_) == FileHandler]
+    if not current_file_handlers:
+        file_handler = FileHandler(log_file)
+        formatter = Formatter(
+            '%(asctime)s %(name)-20s - %(levelname)-5s - %(message)s'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel('DEBUG')
+        log.addHandler(file_handler)
     log.setLevel('DEBUG')
     return log
