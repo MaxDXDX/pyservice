@@ -1,7 +1,5 @@
 """The microservice manager."""
 
-
-import asyncio
 import uuid
 from datetime import datetime as dt
 import time
@@ -13,7 +11,11 @@ from pytz import timezone
 import pika
 
 from pyservice.pyconfig.pyconfig import (
-    AppConfig, MicroserviceConfig, BackuperConfig)
+    AppConfig,
+    MicroserviceConfig,
+    BackuperConfig,
+    DjangoBasedMicroserviceConfig
+)
 from pyservice.pyconfig.pyconfig import default_app_config
 from pyservice.tcpwait.tcpwait import wait_for_tcp_service
 from pyservice.files import files
@@ -38,14 +40,16 @@ class AppManager:
 
         self.set_root_logger()
 
-        self.log = logging.getLogger(self.app_ref)
-        self.log.setLevel(logging.DEBUG)
-        fh = logging.FileHandler(
-            self.directory_for_logs /
-            f'{self.app_ref}-manager.log')
-        self.log.addHandler(fh)
-        self.log.debug('--------------------------------------------------')
-        self.log.debug('%s manager initiated at %s', self.app_ref, dt.now())
+        self.log = self.get_manager_logger()
+
+    def get_manager_logger(self):
+        log = log_tools.get_logger(
+            self.app_ref,
+            directory_for_logs=self.directory_for_logs,
+            erase=self.config.delete_logs_on_start,
+        )
+        return log
+
 
     def set_root_logger(self):
         root_log = log_tools.get_logger(
@@ -216,7 +220,6 @@ class MicroServiceManager(AppManager):
             *args, **kwargs
     ):
         super().__init__(config_of_microservice, *args, **kwargs)
-        asyncio.run(self.preflight_checks())
         self.init_celery_app()
 
     @property
@@ -323,6 +326,7 @@ class MicroServiceManager(AppManager):
         self.log.info('performing preflight checks for microservice %s',
                       self.microservice.ref)
         await self.check_connection_to_rabbit_mq()
+        self.test_rabbit_by_pika()
 
     def get_celery_app(self) -> Celery:
         self.log.debug('getting celery app...')
@@ -359,7 +363,7 @@ class MicroServiceManager(AppManager):
             def self_check():
                 # TODO: add checks
                 self.log.info('Selfcheck for service %s has been passed',
-                              self.app_ref)
+                              self.microservice.ref)
 
             @app.task
             def create_test_file():
@@ -378,6 +382,7 @@ class MicroServiceManager(AppManager):
                 'periodic-selfscheck': {
                     'task': f'{self.app_ref}.self_check',
                     'schedule': 5.0,
+                    'options': {'queue': self.microservice.own_queue},
                 },
             }
 
@@ -523,6 +528,38 @@ class MicroServiceManager(AppManager):
         channel.queue_delete(queue=test_queue)
         connection.close()
         print('RabbitMQ is working!')
+
+
+class DjangoBasedMicroserviceManager(MicroServiceManager):
+    """Manager for microservice powered by Django."""
+
+    config: DjangoBasedMicroserviceConfig
+
+    async def preflight_checks(self):
+        await super().preflight_checks()
+        await self.check_connection_to_db()
+        await self.check_connection_to_keycloak()
+
+    async def check_connection_to_db(self):
+        hostname = self.config.django_db_hostname
+        port = self.config.django_db_port
+        self.log.info('checking TCP connection to django`s database (%s:%s)',
+                      hostname, port)
+        await wait_for_tcp_service(
+            (hostname, port)
+        )
+        self.log.info('OK - django`s database on wire!')
+
+    async def check_connection_to_keycloak(self):
+        hostname = self.config.keycloak_hostname
+        port = self.config.keycloak_port
+        self.log.info('checking TCP connection to keycloak (%s:%s)',
+                      hostname, port)
+        await wait_for_tcp_service(
+            (hostname, port)
+        )
+        self.log.info('OK - keycloak on wire!')
+
 
 
 default_app_manager = AppManager(default_app_config, __file__)

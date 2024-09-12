@@ -58,6 +58,23 @@ class BackuperConfig(MicroserviceConfig):
     tg_group_for_notifications: str = '-4138637604'
 
 
+class DjangoBasedMicroserviceConfig(MicroserviceConfig):
+    """Configuration for microservice powered by Django."""
+
+    django_db_name: str = 'botapi_db'
+    django_db_user: str = 'pgdb_superuser'
+    django_db_password: str = 'test_password'
+    django_db_hostname: str = 'localhost'
+    django_db_port: str = '5432'
+
+    keycloak_scheme: str = 'https'
+    keycloak_hostname: str = 'localhost'
+    keycloak_port: str = '8080'
+    keycloak_path: str = 'auth'
+
+
 default_app_config = AppConfig()
 default_microservice_config = MicroserviceConfig()
 default_backuper_config = BackuperConfig()
+default_django_based_microservice_config = DjangoBasedMicroserviceConfig()
+
