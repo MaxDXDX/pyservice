@@ -42,10 +42,10 @@ def normalized_path(path: str | Path) -> Path:
 
 
 def normalize_path(func_for_path):
-    def wrapper(path: Path | str, *args, **kwargs):
-        if isinstance(path, str):
-            path = Path(path)
-        return func_for_path(path, *args, **kwargs)
+    def wrapper(directory: Path | str, *args, **kwargs):
+        if isinstance(directory, str):
+            directory = Path(directory)
+        return func_for_path(directory, *args, **kwargs)
     return wrapper
 
 

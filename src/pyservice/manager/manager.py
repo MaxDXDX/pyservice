@@ -1,5 +1,6 @@
 """The microservice manager."""
 
+import os
 import uuid
 from datetime import datetime as dt
 import time
@@ -41,10 +42,16 @@ class AppManager:
         self.set_root_logger()
 
         self.log = self.get_manager_logger()
+        self.log_summary()
+        self.post_app_manager_init()
+
+    def post_app_manager_init(self):
+        pass
 
     def get_manager_logger(self):
+        logger_name = f'{self.app_ref}-manager'
         log = log_tools.get_logger(
-            self.app_ref,
+            log_name=logger_name,
             directory_for_logs=self.directory_for_logs,
             erase=self.config.delete_logs_on_start,
         )
@@ -153,6 +160,12 @@ class AppManager:
             as_text = now.strftime(dt_format)
             return as_text
 
+    def localed_dt(self, original: dt):
+        try:
+            return original.astimezone(tz=self.timezone)
+        except AttributeError:
+            return original
+
     def create_text_file_in_tmp_directory(
             self, content: str = None, filename: str = None) -> Path:
         return files.create_text_file_in_directory(
@@ -165,6 +178,9 @@ class AppManager:
             directory=self.directory_for_tmp)
         if detailed_tmp.entities.total_size_in_bytes > 0:
             raise RuntimeError('Tmp directory is not empty')
+
+    def erase_logs_directory(self):
+        files.erase_directory(self.directory_for_logs)
 
     def get_logger_for_pyfile(
             self,
@@ -191,19 +207,30 @@ class AppManager:
             f'Root module (app ref): {self.app_ref}\n'
         )
 
+    def log_summary(self):
+        self.log.debug('Manager summary:')
+        self.log.debug('=========== config ============')
+        self.log.debug('- config: %s', self.config.as_yaml())
+        self.log.debug('===============================')
+        self.log.debug('- parent directory for app: %s',
+                       self.directory_for_place_app_directory)
+        self.log.debug('- directory for app: %s',
+                       self.directory_for_app)
+        self.log.debug('- directory for root module: %s',
+                       self.root_module)
+        self.log.debug('- directory for all data: %s',
+                       self.directory_for_data)
+        self.log.debug('- directory for temp files: %s',
+                       self.directory_for_tmp)
+        self.log.debug('- directory for logs: %s',
+                       self.directory_for_logs)
+
     def on_start(self):
         print('performing <on start> operations...')
         self.log.debug('performing <on start> operations...')
-        ## TODO: logger stops write logs after removing files!
-        # if self.config.delete_logs_on_start:
-        #     current_logs = files.get_list_of_files_in_directory(
-        #         self.directory_for_logs)
-        #     files.erase_directory(self.directory_for_logs)
-        #     print('all logs in directory %s have been deleted: %s',
-        #           self.directory_for_logs, current_logs)
-        self.log.debug('<on start> operations executed!')
-        self.log.info('app %s started!', self.app_ref)
-        print('performing <on start> operations...')
+        if self.config.delete_logs_on_start:
+            self.erase_logs_directory()
+            self.log.debug('logs directory has been erased!')
 
 
 class MicroServiceManager(AppManager):
@@ -221,6 +248,10 @@ class MicroServiceManager(AppManager):
     ):
         super().__init__(config_of_microservice, *args, **kwargs)
         self.init_celery_app()
+        self.post_microservice_manager_init()
+
+    def post_microservice_manager_init(self):
+        pass
 
     @property
     def celery_test_file(self):
@@ -469,11 +500,17 @@ class MicroServiceManager(AppManager):
             wait_result: bool = True,
             timeout: int = None,
     ) -> dict:
+        self.log.debug('executing celery task:')
+        self.log.debug('- task name: %s', task_name)
+        self.log.debug('- task args: %s', task_args)
+        self.log.debug('- queue: %s', queue)
+        self.log.debug('- need to wait result: %s', wait_result)
+        self.log.debug('- timout: %s', timeout)
         if not queue:
             queue = self.microservice.ref
-        print(f'sending task <{task_name}> (args - {task_args}) '
-              f'to queue <{queue}> '
-              f'(wait result: {wait_result})...')
+            self.log.debug('queue is not provided, '
+                           'own queue will be used - %s', queue)
+            
         result: AsyncResult = self.celery_app.send_task(
             task_name,
             queue=queue,
@@ -529,14 +566,88 @@ class MicroServiceManager(AppManager):
         connection.close()
         print('RabbitMQ is working!')
 
+    def log_summary(self):
+        super().log_summary()
+        self.log.debug('- celery app: %s', self.celery_app)
+        self.log.debug('- microservice: %s', self.microservice)
+
 
 class DjangoBasedMicroserviceManager(MicroServiceManager):
     """Manager for microservice powered by Django."""
 
     config: DjangoBasedMicroserviceConfig
 
+    def post_microservice_manager_init(self):
+        value = self.django_settings_module
+        self.log.debug('setting env variable DJANGO_SETTINGS_MODULE to: %s',
+                       value)
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', value)
+
+    @property
+    def django_directory(self) -> Path:
+        result = self.root_module / 'django'
+        assert result.is_dir()
+        return result
+
+    @property
+    def django_main_app_directory(self) -> Path:
+        django_dir = self.django_directory
+        nested_dirs = files.get_list_of_directories_in_directory(
+            directory=django_dir, mask='*'
+        )
+        for dir in nested_dirs:
+            pyfiles = files.get_list_of_files_in_directory(
+                directory=dir, mask='*.py'
+            )
+            filenames = [_.name for _ in pyfiles]
+            if 'settings.py' in filenames:
+                return dir
+        raise ValueError('Can not find directory with main django app.')
+
+    @property
+    def django_main_app_module(self) -> str:
+        as_path = self.django_main_app_directory
+        assert as_path.is_dir()
+        from_src = str(as_path).replace('/etc/service/src/', '')
+        as_module = from_src.replace('/', '.')
+        return as_module
+
+    @property
+    def django_main_app_module_name(self) -> str:
+        return self.django_main_app_module.split('.')[-1]
+
+    @property
+    def django_settings_module(self) -> str:
+        return f'{self.django_main_app_module}.settings'
+
+    @property
+    def gunicorn_config_file_path(self) -> Path:
+        result = self.django_directory / 'gunicorn_config.py'
+        assert result.is_file()
+        return result
+
+    @property
+    def wsgi_app(self) -> str:
+        'ma.django.tgbotapi.wsgi:application'
+        return f'{self.django_main_app_module}.wsgi:application'
+
+    @property
+    @create_if_not_yet
+    def web_static_files_directory(self) -> Path:
+        result = self.artefacts_directory / 'static'
+        return result
+
+    def erase_web_static_files_directory(self):
+        files.erase_directory(self.web_static_files_directory)
+        self.log.debug('directory with web static files erased')
+
+    def on_start(self):
+        super().on_start()
+        self.erase_web_static_files_directory()
+
     async def preflight_checks(self):
         await super().preflight_checks()
+        assert self.django_directory.is_dir()
         await self.check_connection_to_db()
         await self.check_connection_to_keycloak()
 
@@ -551,15 +662,29 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         self.log.info('OK - django`s database on wire!')
 
     async def check_connection_to_keycloak(self):
-        hostname = self.config.keycloak_hostname
-        port = self.config.keycloak_port
-        self.log.info('checking TCP connection to keycloak (%s:%s)',
-                      hostname, port)
-        await wait_for_tcp_service(
-            (hostname, port)
-        )
+        self.log.info('checking TCP connection to keycloak at %s',
+                      self.config.keycloak_url)
+        await wait_for_tcp_service(self.config.keycloak_url)
         self.log.info('OK - keycloak on wire!')
 
+    def log_summary(self):
+        super().log_summary()
+        self.log.debug('- directory for django: %s',
+                       self.django_directory)
+        self.log.debug('- directory with django main app: %s',
+                       self.django_main_app_directory)
+        self.log.debug('- django main app module: %s',
+                       self.django_main_app_module)
+        self.log.debug('- django main app module name: %s',
+                       self.django_main_app_module_name)
+        self.log.debug('- django settings module: %s',
+                       self.django_settings_module)
+        self.log.debug('- directory for django web static files: %s',
+                       self.web_static_files_directory)
+        self.log.debug('- gunicorn config file path: %s',
+                       self.gunicorn_config_file_path)
+        self.log.debug('- wsgi application: %s',
+                       self.wsgi_app)
 
 
 default_app_manager = AppManager(default_app_config, __file__)

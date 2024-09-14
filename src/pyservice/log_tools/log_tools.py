@@ -25,7 +25,6 @@ def remove_all_stream_handlers(logger: Logger):
     for _ in matched:
         logger.removeHandler(_)
 
-
 def get_content_of_log_file_of_logger(logger: Logger) -> str:
     log_file = get_file_of_logger(logger)
     with open(log_file, 'r', encoding='utf-8') as f:
@@ -83,6 +82,17 @@ def get_logger(
             f.write('')
     # pylint:disable=C0123
     current_file_handlers = [_ for _ in log.handlers if type(_) == FileHandler]
+    orphans = []
+    for handler in current_file_handlers:
+        handler: FileHandler
+        current_file = Path(handler.baseFilename)
+        if current_file != log_file:
+            orphans.append(handler)
+    for orphan in orphans:
+        log.removeHandler(orphan)
+
+    current_file_handlers = [_ for _ in log.handlers if type(_) == FileHandler]
+
     if not current_file_handlers:
         file_handler = FileHandler(log_file)
         formatter = Formatter(
@@ -92,4 +102,5 @@ def get_logger(
         file_handler.setLevel('DEBUG')
         log.addHandler(file_handler)
     log.setLevel('DEBUG')
+
     return log

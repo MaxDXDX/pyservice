@@ -24,6 +24,12 @@ class FilesTestCase(TestCase):
     def tearDown(self) -> None:
         self.mng.erase_tmp_directory()
 
+    def test_get_list_of_files_in_directories(self):
+        directory = self.mng.directory_for_tmp
+        self.mng.create_text_file_in_tmp_directory()
+        file_list = files.get_list_of_files_in_directory(directory=directory)
+        self.assertIsInstance(file_list, (list, set))
+
     def test_detailed_directory(self):
         project_directory = Path(__file__).parent.parent
         detailed_directory = files.DetailedDirectory(

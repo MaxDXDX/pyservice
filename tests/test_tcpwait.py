@@ -6,6 +6,8 @@ from unittest import IsolatedAsyncioTestCase
 
 from pyservice.tcpwait import tcpwait
 
+from pydantic import HttpUrl
+
 
 class TcpWait(IsolatedAsyncioTestCase):
     """Test case."""
@@ -19,6 +21,18 @@ class TcpWait(IsolatedAsyncioTestCase):
     async def test_wait_for_service_as_string(self):
         target_as_string = 'google.com:443'
         found = await tcpwait.wait_for_tcp_service(target_as_string, 2)
+        self.assertIsInstance(found, tcpwait.TcpService)
+        self.assertTrue(found.is_ready)
+
+    async def test_wait_for_service_as_text_http(self):
+        google: HttpUrl = 'https://www.google.ru/intl/en/about/products'
+        found = await tcpwait.wait_for_tcp_service(google, 2)
+        self.assertIsInstance(found, tcpwait.TcpService)
+        self.assertTrue(found.is_ready)
+
+    async def test_wait_for_service_as_pydantic_url(self):
+        google = HttpUrl(url='https://www.google.ru/intl/en/about/products')
+        found = await tcpwait.wait_for_tcp_service(google, 2)
         self.assertIsInstance(found, tcpwait.TcpService)
         self.assertTrue(found.is_ready)
 

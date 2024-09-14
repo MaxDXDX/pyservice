@@ -5,6 +5,8 @@ import asyncio
 import dataclasses
 from datetime import datetime as dt
 from typing import Type
+from pydantic import HttpUrl
+from pydantic_core import Url
 
 
 log = logging.getLogger()
@@ -27,7 +29,7 @@ class TcpService:
         return f'<TCP {self.hostname}:{self.port}>'
 
 
-TcpServiceFormat = Type[TcpService | tuple[str, str | int] | str]
+TcpServiceFormat = Type[TcpService | tuple[str, str | int] | str | HttpUrl]
 
 
 def normalize_tcp_service(
@@ -36,15 +38,26 @@ def normalize_tcp_service(
         return TcpService(*initial)
     elif isinstance(initial, TcpService):
         return initial
+    elif isinstance(initial, Url):
+        hostname = initial.host
+        port = initial.port
+        return TcpService(hostname, port)
     elif isinstance(initial, str):
+        initial = initial.strip()
+        is_http = 'http://' in initial or 'https://' in initial
         if ':' not in initial:
             raise ValueError(f'incorrect format for tcp service - {initial}')
-        parts = initial.partition(':')
-        hostname = parts[0]
-        port = int(parts[2])
+        if not is_http:
+            parts = initial.partition(':')
+            hostname = parts[0]
+            port = int(parts[2])
+        else:
+            port = 80 if 'http://' in initial else 443
+            hostname = initial.partition('://')[2].partition('/')[0]
         return TcpService(hostname, port)
     else:
-        raise ValueError(f'incorrect format for tcp service - {initial}')
+        raise ValueError(f'incorrect format for tcp service - {initial}, '
+                         f'type - {type(initial)}')
 
 
 async def wait_for_tcp_service(

@@ -1,6 +1,7 @@
 """Configurations for app and microservices."""
 
 from pydantic_extra_types.timezone_name import TimeZoneName
+from pydantic import HttpUrl
 
 from pyservice.domain.base import BaseSettings
 
@@ -61,16 +62,24 @@ class BackuperConfig(MicroserviceConfig):
 class DjangoBasedMicroserviceConfig(MicroserviceConfig):
     """Configuration for microservice powered by Django."""
 
+    is_django_server_in_dev_mode: bool = True
+    is_django_server_in_debug_mode: bool = True
+    django_secret_key: str = 'django-insecure-96^_wtuv1c_rgzbo=7cxvj@4cw0$faxitl@a(e1pd@#)ueob6k'
+
+    django_static_files_prefix: str = 'static'
+
     django_db_name: str = 'botapi_db'
     django_db_user: str = 'pgdb_superuser'
     django_db_password: str = 'test_password'
     django_db_hostname: str = 'localhost'
     django_db_port: str = '5432'
 
-    keycloak_scheme: str = 'https'
-    keycloak_hostname: str = 'localhost'
-    keycloak_port: str = '8080'
-    keycloak_path: str = 'auth'
+    super_users: list[tuple[str, str, str]] = [
+        ('admin-1', 'nimda-1', 'admin-1@admin.net'),
+        ('admin-2', 'nimda-2', 'admin-2@admin.net'),
+    ]
+
+    keycloak_url: HttpUrl = 'http://keycloak:8080/auth'
 
 
 default_app_config = AppConfig()
