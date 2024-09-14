@@ -510,7 +510,6 @@ class MicroServiceManager(AppManager):
             queue = self.microservice.ref
             self.log.debug('queue is not provided, '
                            'own queue will be used - %s', queue)
-            
         result: AsyncResult = self.celery_app.send_task(
             task_name,
             queue=queue,
@@ -595,13 +594,13 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         nested_dirs = files.get_list_of_directories_in_directory(
             directory=django_dir, mask='*'
         )
-        for dir in nested_dirs:
+        for d in nested_dirs:
             pyfiles = files.get_list_of_files_in_directory(
-                directory=dir, mask='*.py'
+                directory=d, mask='*.py'
             )
             filenames = [_.name for _ in pyfiles]
             if 'settings.py' in filenames:
-                return dir
+                return d
         raise ValueError('Can not find directory with main django app.')
 
     @property
@@ -614,7 +613,7 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
 
     @property
     def django_main_app_module_name(self) -> str:
-        return self.django_main_app_module.split('.')[-1]
+        return self.django_main_app_module.split('.', maxsplit=1)[-1]
 
     @property
     def django_settings_module(self) -> str:
