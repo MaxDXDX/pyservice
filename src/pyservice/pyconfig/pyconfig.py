@@ -70,6 +70,18 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
 
     django_static_files_prefix: str = 'static'
 
+    django_csrf_trusted_origins: list[str] = [
+        'https://127.0.0.1',
+        'http://localhost',
+        'http://0.0.0.0'
+    ]
+
+    django_allowed_hosts: list[str] = [
+        '127.0.0.1',
+        'localhost',
+        '0.0.0.0'
+    ]
+
     django_db_name: str = 'botapi_db'
     django_db_user: str = 'pgdb_superuser'
     django_db_password: str = 'test_password'
