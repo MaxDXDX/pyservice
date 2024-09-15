@@ -438,8 +438,11 @@ class MicroServiceManager(AppManager):
                 queue=self.microservice.own_queue,
             )
 
-    def init_celery_app(self) -> Celery:
+    def pre_init_celery_app(self):
+        pass
 
+    def init_celery_app(self) -> Celery:
+        self.pre_init_celery_app()
         if not self.celery_app:
             self.celery_app = self.get_celery_app()
 
@@ -576,11 +579,9 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
 
     config: DjangoBasedMicroserviceConfig
 
-    def post_microservice_manager_init(self):
-        value = self.django_settings_module
-        self.log.debug('setting env variable DJANGO_SETTINGS_MODULE to: %s',
-                       value)
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', value)
+    def pre_init_celery_app(self):
+        os.environ.setdefault(
+            'DJANGO_SETTINGS_MODULE', self.django_settings_module)
 
     @property
     def django_directory(self) -> Path:
