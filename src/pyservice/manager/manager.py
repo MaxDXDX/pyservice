@@ -616,6 +616,14 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         return as_module
 
     @property
+    def django_main_app_config_class(self) -> str:
+        return f'{self.django_main_app_module}.apps.MainConfig'
+
+    @property
+    def django_root_urlconf(self) -> str:
+        return f'{self.django_main_app_module}.urls'
+
+    @property
     def django_main_app_module_name(self) -> str:
         return self.django_main_app_module.split('.', maxsplit=1)[-1]
 
@@ -632,13 +640,17 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
     @property
     def gunicorn_log_file_path(self) -> Path:
         result = self.directory_for_logs / 'gunicorn.log'
-        assert result.is_file()
         return result
 
     @property
     def wsgi_app(self) -> str:
         'ma.django.tgbotapi.wsgi:application'
         return f'{self.django_main_app_module}.wsgi:application'
+
+    @property
+    def wsgi_app_with_only_dots(self) -> str:
+        'ma.django.tgbotapi.wsgi.application'
+        return self.wsgi_app.replace(':', '.')
 
     @property
     @create_if_not_yet
@@ -685,16 +697,22 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
                        self.django_main_app_directory)
         self.log.debug('- django main app module: %s',
                        self.django_main_app_module)
+        self.log.debug('- django main app module config class: %s',
+                       self.django_main_app_config_class)
         self.log.debug('- django main app module name: %s',
                        self.django_main_app_module_name)
         self.log.debug('- django settings module: %s',
                        self.django_settings_module)
+        self.log.debug('- django root urlconf: %s',
+                       self.django_root_urlconf)
         self.log.debug('- directory for django web static files: %s',
                        self.web_static_files_directory)
         self.log.debug('- gunicorn config file path: %s',
                        self.gunicorn_config_file_path)
-        self.log.debug('- wsgi application: %s',
+        self.log.debug('- wsgi application (with colon - for gunicorn config): %s',
                        self.wsgi_app)
+        self.log.debug('- wsgi application (with only dots - for django`s settings): %s',
+                       self.wsgi_app_with_only_dots)
 
 
 default_app_manager = AppManager(default_app_config, __file__)
