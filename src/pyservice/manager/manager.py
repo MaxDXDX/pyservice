@@ -649,7 +649,8 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         await super().preflight_checks()
         assert self.django_directory.is_dir()
         await self.check_connection_to_db()
-        await self.check_connection_to_keycloak()
+        if self.config.is_keycloak_auth_enabled:
+            await self.check_connection_to_keycloak()
 
     async def check_connection_to_db(self):
         hostname = self.config.django_db_hostname

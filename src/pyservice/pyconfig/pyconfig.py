@@ -93,6 +93,7 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
         ('admin-2', 'nimda-2', 'admin-2@admin.net'),
     ]
 
+    is_keycloak_auth_enabled: bool = True
     keycloak_url: HttpUrl = 'http://keycloak:8080/auth'
 
 
