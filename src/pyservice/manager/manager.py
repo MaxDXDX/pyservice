@@ -580,6 +580,9 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
     config: DjangoBasedMicroserviceConfig
 
     def pre_init_celery_app(self):
+        self.set_django_setting_module_at_environment()
+
+    def set_django_setting_module_at_environment(self):
         os.environ.setdefault(
             'DJANGO_SETTINGS_MODULE', self.django_settings_module)
 
