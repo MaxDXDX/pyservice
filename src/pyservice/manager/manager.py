@@ -630,6 +630,12 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         return result
 
     @property
+    def gunicorn_log_file_path(self) -> Path:
+        result = self.directory_for_logs / 'gunicorn.log'
+        assert result.is_file()
+        return result
+
+    @property
     def wsgi_app(self) -> str:
         'ma.django.tgbotapi.wsgi:application'
         return f'{self.django_main_app_module}.wsgi:application'
