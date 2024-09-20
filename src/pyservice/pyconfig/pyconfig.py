@@ -82,7 +82,7 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
         '0.0.0.0'
     ]
 
-    django_db_name: str = 'botapi_db'
+    django_db_name: str = 'django_db'
     django_db_user: str = 'pgdb_superuser'
     django_db_password: str = 'test_password'
     django_db_hostname: str = 'localhost'
