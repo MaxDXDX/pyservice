@@ -611,7 +611,7 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
     def django_main_app_module(self) -> str:
         as_path = self.django_main_app_directory
         assert as_path.is_dir()
-        from_src = str(as_path).replace('/etc/service/src/', '')
+        from_src = str(as_path).partition('/src/')[2]
         as_module = from_src.replace('/', '.')
         return as_module
 
@@ -709,9 +709,11 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
                        self.web_static_files_directory)
         self.log.debug('- gunicorn config file path: %s',
                        self.gunicorn_config_file_path)
-        self.log.debug('- wsgi application (with colon - for gunicorn config): %s',
+        self.log.debug('- wsgi application '
+                       '(with colon - for gunicorn config): %s',
                        self.wsgi_app)
-        self.log.debug('- wsgi application (with only dots - for django`s settings): %s',
+        self.log.debug('- wsgi application '
+                       '(with only dots - for django`s settings): %s',
                        self.wsgi_app_with_only_dots)
 
 

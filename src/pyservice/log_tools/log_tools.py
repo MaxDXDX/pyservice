@@ -25,6 +25,7 @@ def remove_all_stream_handlers(logger: Logger):
     for _ in matched:
         logger.removeHandler(_)
 
+
 def get_content_of_log_file_of_logger(logger: Logger) -> str:
     log_file = get_file_of_logger(logger)
     with open(log_file, 'r', encoding='utf-8') as f:
@@ -77,6 +78,9 @@ def get_logger(
     # if indented:
     #     log.debug = indented_decorator(log.debug)
     log_file = directory_for_logs / f'{log_name}.log'
+    error_log_file = directory_for_logs / 'errors.log'
+    log_files = [log_file, error_log_file]
+
     if erase and log_file.is_file():
         with open(log_file, 'w', encoding='utf-8') as f:
             f.write('')
@@ -86,21 +90,27 @@ def get_logger(
     for handler in current_file_handlers:
         handler: FileHandler
         current_file = Path(handler.baseFilename)
-        if current_file != log_file:
+        if current_file not in log_files:
             orphans.append(handler)
     for orphan in orphans:
         log.removeHandler(orphan)
 
-    current_file_handlers = [_ for _ in log.handlers if type(_) == FileHandler]
+    file_handlers: list[FileHandler] = \
+        [_ for _ in log.handlers if type(_) == FileHandler]
+    current_files = [Path(_.baseFilename) for _ in file_handlers]
 
-    if not current_file_handlers:
-        file_handler = FileHandler(log_file)
-        formatter = Formatter(
-            '%(asctime)s %(name)-20s - %(levelname)-5s - %(message)s'
-        )
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel('DEBUG')
-        log.addHandler(file_handler)
+    for f in log_files:
+        if f not in current_files:
+            file_handler = FileHandler(f)
+            formatter = Formatter(
+                '%(asctime)s %(name)-20s - %(levelname)-5s - %(message)s'
+            )
+            file_handler.setFormatter(formatter)
+            if f == error_log_file:
+                file_handler.setLevel('ERROR')
+            else:
+                file_handler.setLevel('DEBUG')
+            log.addHandler(file_handler)
+    assert len(log.handlers) == 2
     log.setLevel('DEBUG')
-
     return log

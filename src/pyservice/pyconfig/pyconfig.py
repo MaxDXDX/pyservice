@@ -79,7 +79,8 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
     django_allowed_hosts: list[str] = [
         '127.0.0.1',
         'localhost',
-        '0.0.0.0'
+        '0.0.0.0',
+        'testserver',
     ]
 
     django_db_name: str = 'django_db'
