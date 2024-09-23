@@ -76,6 +76,11 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
         'http://0.0.0.0'
     ]
 
+    django_cors_allowed_origins: list[str] = [
+        'https://127.0.0.1:5173',
+        'http://localhost:5173',
+    ]
+
     django_allowed_hosts: list[str] = [
         '127.0.0.1',
         'localhost',
