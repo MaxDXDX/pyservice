@@ -8,8 +8,12 @@ import logging
 from pathlib import Path
 
 import celery.exceptions
+from celery import Celery
+from celery.result import AsyncResult
 from pytz import timezone
 import pika
+
+from tgs_client import TgServiceClient
 
 from pyservice.pyconfig.pyconfig import (
     AppConfig,
@@ -25,10 +29,6 @@ from pyservice.domain.cluster import Microservice, Backuper, deserialize_microse
 from pyservice.log_tools import log_tools
 
 
-from celery import Celery
-from celery.result import AsyncResult
-
-
 class AppManager:
     """Manager for arbitrary python app."""
 
@@ -42,10 +42,13 @@ class AppManager:
         self.set_root_logger()
 
         self.log = self.get_manager_logger()
-        self.log_summary()
         self.post_app_manager_init()
 
     def post_app_manager_init(self):
+        self.log_summary()
+
+    def enable_test_mode(self):
+        """For running tests."""
         pass
 
     def get_manager_logger(self):
@@ -180,7 +183,8 @@ class AppManager:
             raise RuntimeError('Tmp directory is not empty')
 
     def erase_logs_directory(self):
-        files.erase_directory(self.directory_for_logs)
+        # files.erase_directory(self.directory_for_logs)
+        files.clear_all_files_in_directory(self.directory_for_logs)
 
     def get_logger_for_pyfile(
             self,
@@ -250,8 +254,17 @@ class MicroServiceManager(AppManager):
         self.init_celery_app()
         self.post_microservice_manager_init()
 
-    def post_microservice_manager_init(self):
+    def post_app_manager_init(self):
         pass
+
+    def post_microservice_manager_init(self):
+        super().post_app_manager_init()
+
+    def enable_test_mode(self):
+        """For running tests."""
+        super().enable_test_mode()
+        self.config.tg_group_for_system_notifications = (
+            self.config.tg_group_for_tests)
 
     @property
     def celery_test_file(self):
@@ -358,6 +371,29 @@ class MicroServiceManager(AppManager):
                       self.microservice.ref)
         await self.check_connection_to_rabbit_mq()
         self.test_rabbit_by_pika()
+
+        self.send_message_to_telegram_chat(
+            text=f'Preflight check for {self.microservice}',
+            chat_id=self.config.tg_group_for_tests
+        )
+
+    def add_task_to_celery_scheduler(
+            self,
+            ref: str,
+            schedule,
+            task_name: str,
+            args: tuple | dict = None,
+    ):
+        self.log.debug('adding task to celery scheduler...')
+        scheduler: dict = self.celery_app.conf.beat_schedule
+        scheduler[ref] = {
+            'task': f'{self.app_ref}.{task_name}',
+            'args': args,
+            'schedule': schedule,
+            'options': {'queue': self.microservice.own_queue},
+        }
+        self.log.debug('task added, current tasks: %s',
+                       self.celery_app.conf.beat_schedule)
 
     def get_celery_app(self) -> Celery:
         self.log.debug('getting celery app...')
@@ -543,6 +579,10 @@ class MicroServiceManager(AppManager):
             )
         )
 
+    def on_start(self):
+        super().on_start()
+        self.system_notification(f'{self.microservice} has been started!')
+
     def test_rabbit_by_pika(self):
         print('Checking RabbitMQ by test message...')
         test_message = f'test message {uuid.uuid4()}'
@@ -572,6 +612,27 @@ class MicroServiceManager(AppManager):
         super().log_summary()
         self.log.debug('- celery app: %s', self.celery_app)
         self.log.debug('- microservice: %s', self.microservice)
+        self.log.debug('- celery config: %s',
+                       self.celery_app.conf)
+
+    def send_message_to_telegram_chat(self, text, chat_id):
+        self.log.debug('sending text to the chat with id="%s"', chat_id)
+        tg_client = TgServiceClient(
+            url=self.config.tgs_server_url,
+        )
+        sender_phone = self.config.tg_account_for_sending_notifications
+        tg_chat = chat_id
+        sent_message = tg_client.send_text_message(
+            app_phone=str(sender_phone),
+            receiver=tg_chat,
+            text=text[:4000]
+        )
+        assert isinstance(sent_message, dict)
+        self.log.debug('message has been sent successfully: %s', sent_message)
+
+    def system_notification(self, text):
+        tg_chat = self.config.tg_group_for_system_notifications
+        self.send_message_to_telegram_chat(text, chat_id=tg_chat)
 
 
 class DjangoBasedMicroserviceManager(MicroServiceManager):

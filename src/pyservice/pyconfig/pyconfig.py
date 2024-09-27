@@ -30,6 +30,9 @@ class MicroserviceConfig(AppConfig):
     rabbitmq_password: str = 'rabbit-initial-password'
     default_celery_queue: str = 'cluster'
     tgs_server_url: str = '10.0.80.2:50051'
+    tg_group_for_system_notifications: str = '-4101022781'
+    tg_group_for_tests: str = '-4138637604'
+    tg_account_for_sending_notifications: str = '+88804692592'
 
 
 class BackuperConfig(MicroserviceConfig):

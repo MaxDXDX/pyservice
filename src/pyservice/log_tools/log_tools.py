@@ -111,6 +111,11 @@ def get_logger(
             else:
                 file_handler.setLevel('DEBUG')
             log.addHandler(file_handler)
-    assert len(log.handlers) == 2
+
+    remove_all_stream_handlers(log)
+
+    if len(log.handlers) != 2:
+        raise RuntimeError(f'number of handlers for {log_name} is not 2: '
+                           f'{log.handlers}')
     log.setLevel('DEBUG')
     return log

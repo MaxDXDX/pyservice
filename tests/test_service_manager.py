@@ -49,6 +49,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
             pass
         cfg = MyConfig(__file__)
         self.mng = MicroServiceManager(cfg, __file__)
+        self.mng.enable_test_mode()
 
     async def test_check_connection_to_rabbit(self):
         await self.mng.check_connection_to_rabbit_mq()
@@ -109,3 +110,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
             log.debug('another record from main function')
 
         my_func()
+
+    def test_send_system_notification_to_telegram_chat(self):
+        msg = 'TEST: system notification'
+        self.mng.system_notification(msg)

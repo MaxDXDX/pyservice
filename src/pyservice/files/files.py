@@ -125,6 +125,17 @@ def erase_directory(directory: Path):
         shutil.rmtree(_)
 
 
+@normalize_path
+def clear_all_files_in_directory(directory: Path):
+    assert not directory.is_file()
+    assert directory.is_dir()
+    all_entities = directory.glob('**/*')
+    files = [x for x in all_entities if x.is_file()]
+    for _ in files:
+        # pylint:disable=R1732,W1514
+        open(_, 'w').close()
+
+
 class SetOfFileSystemEntities(BaseModel):
     """The set of files, dirs and other file-system entities."""
 
