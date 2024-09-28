@@ -531,6 +531,7 @@ class MicroServiceManager(AppManager):
             result.add(next_one)
         return result
 
+    # pylint:disable=R0917
     def execute_celery_task(
             self,
             task_name: str,

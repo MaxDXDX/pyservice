@@ -15,6 +15,7 @@ def shrink(string, limit):
     return result
 
 
+# pylint:disable=R0917
 def execute_function_with_logging(
         logger: Logger,
         level: str,
