@@ -366,9 +366,16 @@ class MicroServiceManager(AppManager):
         )
         self.log.info('OK - RabbitMQ on wire!')
 
+    async def check_connection_to_telegram_server(self):
+        url = self.config.tgs_server_url
+        self.log.info('check TCP connection to Telegram Server (%s)', url)
+        await wait_for_tcp_service(url)
+        self.log.info('OK - Telegram Server on wire!')
+
     async def preflight_checks(self):
         self.log.info('performing preflight checks for microservice %s',
                       self.microservice.ref)
+        await self.check_connection_to_telegram_server()
         await self.check_connection_to_rabbit_mq()
         self.test_rabbit_by_pika()
 

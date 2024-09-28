@@ -10,6 +10,8 @@ test:
   interruptible: true
   image: python:3.11
   stage: tests
+  variables:
+    tgs_server_url: '192.168.0.2:50051'
   script:
     - python -m pip install -r requirements-dev.txt
     - python -m unittest

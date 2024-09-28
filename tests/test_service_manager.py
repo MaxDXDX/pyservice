@@ -54,6 +54,9 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
     async def test_check_connection_to_rabbit(self):
         await self.mng.check_connection_to_rabbit_mq()
 
+    async def test_check_connection_to_telegram_server(self):
+        await self.mng.check_connection_to_telegram_server()
+
     async def test_preflight_checks(self):
         await self.mng.preflight_checks()
 
