@@ -631,6 +631,8 @@ class MicroServiceManager(AppManager):
         self.log.debug('message has been sent successfully: %s', sent_message)
 
     def system_notification(self, text):
+        header = f'Notification from "{self.microservice.ref}":\n'
+        text = header + text
         tg_chat = self.config.tg_group_for_system_notifications
         self.send_message_to_telegram_chat(text, chat_id=tg_chat)
 
