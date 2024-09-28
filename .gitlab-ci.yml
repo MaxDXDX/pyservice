@@ -8,7 +8,7 @@ stages:
 
 test:
   interruptible: true
-  image: python:3.12
+  image: python:3.11
   stage: tests
   script:
     - python -m pip install -r requirements-dev.txt
