@@ -3,6 +3,7 @@ Tests.
 """
 
 import os
+import json
 
 from unittest import TestCase
 from pathlib import Path
@@ -16,6 +17,14 @@ current_path = Path(__file__).parent
 
 class AppConfigTestCase(TestCase):
     """App config tests."""
+
+    def test_set_setting_from_string(self) -> None:
+        class SimpleConfig(AppConfig):
+            my_setting: bool = True
+        cfg = SimpleConfig()
+        self.assertEqual(cfg.my_setting, True)
+        cfg.my_setting = json.loads('false')
+        self.assertEqual(cfg.my_setting, False)
 
     def test_simple_app_config(self) -> None:
         class SimpleConfig(AppConfig):
