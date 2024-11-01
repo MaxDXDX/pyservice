@@ -40,6 +40,7 @@ class AppManager:
         self.config = config_of_service
 
         self.set_root_logger()
+        self.override_handlers_for_logger()
 
         self.log = self.get_manager_logger()
         self.post_app_manager_init()
@@ -198,6 +199,14 @@ class AppManager:
             erase=self.config.delete_logs_on_start,
         )
         return logger
+
+    def override_handlers_for_logger(self) -> None:
+        for _ in self.config.tracked_loggers:
+            log_tools.get_logger(
+                log_name=_,
+                directory_for_logs=self.directory_for_logs,
+                erase=self.config.delete_logs_on_start,
+            )
 
     def print_summary(self):
         return (

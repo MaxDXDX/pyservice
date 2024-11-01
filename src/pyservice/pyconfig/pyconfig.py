@@ -14,6 +14,9 @@ class AppConfig(BaseSettings):
 
     app_human_name: str = 'Приложение на Python'
 
+    # put here any loggers from other modules to create default handlers
+    tracked_loggers: list[str] = []
+
 
 class MicroserviceConfig(AppConfig):
     """Configuration for microservice in cluster with RabbitMQ and Celery."""
