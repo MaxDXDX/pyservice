@@ -30,9 +30,3 @@ def init_new_service(app_dir: Path):
     init_data.app_dir = app_dir
     print(init_data.as_yaml())
     init_data.create_files_and_directories()
-
-
-
-
-
-
