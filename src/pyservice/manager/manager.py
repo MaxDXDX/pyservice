@@ -34,6 +34,7 @@ class AppManager:
 
     config: AppConfig
     _origin_file: Path
+    test_mode: bool = False
 
     def __init__(self, config_of_service: AppConfig, origin_file: str | Path):
         self._origin_file = Path(origin_file)
@@ -84,6 +85,13 @@ class AppManager:
         parent_for_app_dir, app_dir, app_root_module = (
             self.base_project_directories)
         return app_dir
+
+    @property
+    def directory_for_tests(self) -> Path:
+        # pylint: disable=W0612
+        parent_for_app_dir, app_dir, app_root_module = (
+            self.base_project_directories)
+        return app_dir / 'tests'
 
     @property
     def root_module(self) -> Path | None:
@@ -225,6 +233,8 @@ class AppManager:
         self.log.debug('=========== config ============')
         self.log.debug('- config: %s', self.config.as_yaml())
         self.log.debug('===============================')
+        self.log.debug('- is app in test mode: %s',
+                       self.test_mode)
         self.log.debug('- parent directory for app: %s',
                        self.directory_for_place_app_directory)
         self.log.debug('- directory for app: %s',
@@ -736,6 +746,26 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
     @create_if_not_yet
     def web_static_files_directory(self) -> Path:
         result = self.artefacts_directory / 'static'
+        return result
+
+    @property
+    def db_settings_for_django(self) -> dict:
+        if not self.test_mode:
+            result = {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': self.config.django_db_name,
+                'USER': self.config.django_db_user,
+                'PASSWORD': self.config.django_db_password,
+                'HOST': self.config.django_db_hostname,
+                'PORT': self.config.django_db_port,
+                'ATOMIC_REQUESTS': False,
+                'AUTOCOMMIT': True,
+            }
+        else:
+            result = {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': self.django_directory / 'db.sql',
+            }
         return result
 
     def erase_web_static_files_directory(self):

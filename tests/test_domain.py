@@ -20,3 +20,4 @@ class DomainModelsTestCase(TestCase):
         user = User()
         self.assertIsInstance(user.as_json(), str)
         self.assertIsInstance(user.as_dict(), dict)
+        self.assertIsInstance(user.as_toml(), str)

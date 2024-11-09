@@ -5,4 +5,8 @@ artifacts*
 artefacts*
 build
 
+src/*
+!src/examples
+!src/pyservice
+
 restart-celery.sh

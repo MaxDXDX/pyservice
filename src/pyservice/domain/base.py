@@ -1,5 +1,6 @@
 """Domain models."""
 import json
+import toml
 
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic_settings import BaseSettings as PydanticBaseSettings
@@ -7,6 +8,7 @@ from pydantic_settings import BaseSettings as PydanticBaseSettings
 import yaml
 
 from pyservice.mixins.mixins import IdentityMixin
+
 
 class SerializationMixin:
     """Serialization."""
@@ -23,6 +25,9 @@ class SerializationMixin:
     def as_json(self) -> str:
         as_dict = json.dumps(self.as_dict())
         return as_dict
+
+    def as_toml(self) -> str:
+        return toml.dumps(self.as_dict())
 
 
 class BaseModel(PydanticBaseModel, SerializationMixin):

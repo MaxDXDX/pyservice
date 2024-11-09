@@ -22,6 +22,7 @@ dependencies = [
     "pydantic_settings",
     "PyYAML",
     "pika",
+    "toml",
 
     "tgs-client @ git+https://pack:F6VxZN5xuHrd5fsdK9_V@git.cebb.pro/ias-phoenix-native/submodules/telegram-service-client.git@_package",
 ]
