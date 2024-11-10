@@ -1,6 +1,7 @@
 """The microservice manager."""
 
 import os
+import sys
 import uuid
 from datetime import datetime as dt
 import time
@@ -233,6 +234,7 @@ class AppManager:
         self.log.debug('=========== config ============')
         self.log.debug('- config: %s', self.config.as_yaml())
         self.log.debug('===============================')
+        self.log.debug('sys.path: %s', sys.path)
         self.log.debug('- is app in test mode: %s',
                        self.test_mode)
         self.log.debug('- parent directory for app: %s',
@@ -749,8 +751,13 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         return result
 
     @property
-    def db_settings_for_django(self) -> dict:
-        if not self.test_mode:
+    def is_django_test_mode(self) -> bool:
+        """Whether django test has been started or not."""
+        return sys.argv[1:2] == ['test']
+
+    @property
+    def django_db_settings(self) -> dict:
+        if not self.is_django_test_mode:
             result = {
                 'ENGINE': 'django.db.backends.postgresql',
                 'NAME': self.config.django_db_name,
@@ -825,6 +832,10 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         self.log.debug('- wsgi application '
                        '(with only dots - for django`s settings): %s',
                        self.wsgi_app_with_only_dots)
+        self.log.debug('- is django test mode: %s',
+                       self.is_django_test_mode)
+        self.log.debug('- database settings: %s',
+                       self.django_db_settings)
 
 
 default_app_manager = AppManager(default_app_config, __file__)
