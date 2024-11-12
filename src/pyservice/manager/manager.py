@@ -52,7 +52,7 @@ class AppManager:
 
     def enable_test_mode(self):
         """For running tests."""
-        pass
+        self.test_mode = True
 
     def get_manager_logger(self):
         logger_name = f'{self.app_ref}-manager'

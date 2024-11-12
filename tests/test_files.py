@@ -22,7 +22,8 @@ class FilesTestCase(TestCase):
         self.mng.erase_tmp_directory()
 
     def tearDown(self) -> None:
-        self.mng.erase_tmp_directory()
+        # self.mng.erase_tmp_directory()
+        pass
 
     def test_get_list_of_files_in_directories(self):
         directory = self.mng.directory_for_tmp
@@ -68,4 +69,18 @@ class FilesTestCase(TestCase):
             ignore_single_root_dir=True,
         )
         self.assertTrue(test_file.is_file())
+
+    def test_md5(self):
+        test_file = self.mng.create_text_file_in_tmp_directory(
+            content='some-content', filename='md5check.txt'
+        )
+        md5 = files.md5(test_file)
+        self.assertEqual(md5, 'ad60407c083b4ecc372614b8fcd9f305')
+
+        differ = self.mng.create_text_file_in_tmp_directory(
+            content='some-contenT', filename='md5check2.txt'
+        )
+        md5_of_differ = files.md5(differ)
+        self.assertNotEqual(md5_of_differ, 'ad60407c083b4ecc372614b8fcd9f305')
+
 

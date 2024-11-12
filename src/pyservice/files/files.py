@@ -6,6 +6,7 @@ import shutil
 import json
 import pathlib
 from pathlib import Path
+import hashlib
 from typing import Any
 
 import aiofiles
@@ -354,3 +355,11 @@ def save_dict_or_list(content: dict, full_path, indented=True):
         with open(full_path, 'w', encoding='utf-8') as f:
             indent = 2 if indented else None
             json.dump(content, f, ensure_ascii=False, indent=indent)
+
+
+def md5(fullpath: Path):
+    with open(fullpath, 'rb') as f:
+        file_hash = hashlib.md5()
+        while chunk := f.read(8192):
+            file_hash.update(chunk)
+    return file_hash.hexdigest()
