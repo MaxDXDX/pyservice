@@ -71,6 +71,8 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
     is_django_server_in_dev_mode: bool = True
     is_django_server_in_debug_mode: bool = True
 
+    url_prefix: str | None = None
+
     # pylint: disable=C0301
     django_secret_key: str = 'django-insecure-96^_wtuv1c_rgzbo=7cxvj@4cw0$faxitl@a(e1pd@#)ueob6k'
 
