@@ -36,3 +36,45 @@ class TextToolsTestCase(TestCase):
     def test_get_random_english_words(self):
         as_one_string = text_tools.get_random_english_words(number=10)
         self.assertEqual(len(as_one_string.split(' ')), 10)
+
+    def test_shrink_1(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 30
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)
+
+    def test_shrink_2(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 20
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)
+
+    def test_shrink_3(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 4
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)
+
+    def test_shrink_4(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 2
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)
+
+    def test_shrink_5(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 1
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)
+
+    def test_shrink_6(self):
+        long_text = \
+            '|123456_10|123456_20|123456_30|123456_40|123456_50|123456_60'
+        limit = 50
+        shrunk = text_tools.shrunk_text(long_text, limit)
+        self.assertEqual(len(shrunk), limit)

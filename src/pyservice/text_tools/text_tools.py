@@ -42,3 +42,46 @@ def get_random_english_words(
     if as_list:
         return words
     return ' '.join(words)
+
+
+def shrunk_text(text: str, limit: int, with_comment: bool = True,
+                symblos: str = ' ...') -> str:
+    """Shrink long strings and add dots."""
+    assert limit > 0
+    if not isinstance(text, str):
+        return text
+    text_length = len(text)
+
+    if text_length <= 1:
+        return text
+
+    if limit == 1:
+        return text[0]
+
+    if text_length <= limit:
+        return text
+
+    while True:
+        showed = text[:limit]
+        hidden = text[limit:]
+        slug = f'{symblos} and more {len(hidden)} chars' \
+            if with_comment else symblos
+        slug_size = len(slug)
+        if slug_size < len(showed):
+            text_showed = showed[:-1*slug_size]
+            result = f'{text_showed}{slug}'
+            return result
+        elif len(slug) <= len(hidden):
+            if with_comment:
+                without_comment = shrunk_text(text, limit, with_comment=False)
+                return without_comment
+            else:
+                with_arrow = shrunk_text(text, limit, with_comment=False,
+                                         symblos='→')
+                return with_arrow
+            # limit -= 1
+            # if limit == 0:
+            #     return showed
+        # else:
+        #     result = f'{showed}{slug}'
+        #     return result
