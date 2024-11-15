@@ -3,6 +3,7 @@ import json
 import toml
 
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings as PydanticBaseSettings
 
 import yaml
@@ -32,6 +33,10 @@ class SerializationMixin:
 
 class BaseModel(PydanticBaseModel, SerializationMixin):
     pass
+
+
+class BaseModelWithArbitraryFields(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class BaseEntity(PydanticBaseModel, SerializationMixin, IdentityMixin):

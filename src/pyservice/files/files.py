@@ -350,7 +350,7 @@ def get_content_of_found_file_in_folder__sync(
                 return data
 
 
-def save_dict_or_list(content: dict, full_path, indented=True):
+def save_dict_or_list(content: dict | list, full_path, indented=True):
     if isinstance(content, (dict, list)):
         with open(full_path, 'w', encoding='utf-8') as f:
             indent = 2 if indented else None
