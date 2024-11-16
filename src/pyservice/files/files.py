@@ -357,7 +357,7 @@ def save_dict_or_list(content: dict | list, full_path, indented=True):
             json.dump(content, f, ensure_ascii=False, indent=indent)
 
 
-def save_text(content: str, full_path, indented=True):
+def save_text(content: str, full_path):
     assert isinstance(content, str)
     with open(full_path, 'w', encoding='utf-8') as f:
         f.write(content)
