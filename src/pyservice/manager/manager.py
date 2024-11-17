@@ -559,6 +559,29 @@ class MicroServiceManager(AppManager):
             result.add(next_one)
         return result
 
+    def get_all_celery_tasks(
+            self, with_internal_celery: bool = False) -> list[str]:
+        # TODO: this method works only from outside
+        self.celery_app.loader.import_default_modules()
+        tasks = self.celery_app.tasks.keys()
+        if not with_internal_celery:
+            tasks = list(filter(lambda t: 'celery.' not in t, tasks))
+        return list(sorted(tasks))
+
+    def start_celery_task(
+            self,
+            task_name: str,
+            task_args: tuple = None,
+            queue: str = None,
+    ) -> None:
+        """Start task without waiting result."""
+        self.execute_celery_task(
+            task_name=task_name,
+            task_args=task_args,
+            queue=queue,
+            wait_result=False,
+        )
+
     # pylint:disable=R0917
     def execute_celery_task(
             self,
@@ -641,8 +664,10 @@ class MicroServiceManager(AppManager):
         super().log_summary()
         self.log.debug('- celery app: %s', self.celery_app)
         self.log.debug('- microservice: %s', self.microservice)
-        self.log.debug('- celery config: %s',
-                       self.celery_app.conf)
+        self.log.debug('- celery config: %s', self.celery_app.conf)
+        # TODO:
+        # self.log.debug('- celery registered tasks: %s',
+        #                self.get_all_celery_tasks())
 
     def send_message_to_telegram_chat(self, text, chat_id):
         self.log.debug('sending text to the chat with id="%s"', chat_id)
