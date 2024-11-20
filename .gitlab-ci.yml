@@ -12,6 +12,31 @@ test:
   stage: tests
   variables:
     tgs_server_url: '192.168.0.2:50051'
+
+    seq_url: 'http://test-seq/'
+    seq_api_key: 'some-key'
+
+    rabbitmq_hostname: 'test-rabbit'
+    rabbitmq_port: '5672'
+    rabbitmq_username: 'test-rabbit-admin'
+    rabbitmq_password: 'test-rabbit-password'
+    rabbitmq_vhost: 'test-vhost'
+
+  services:
+    - name: datalust/seq:2024.3
+      alias: test-seq
+      variables:
+        ACCEPT_EULA: 'Y'
+        # password: <test-seq-password>
+        SEQ_FIRSTRUN_ADMINPASSWORDHASH: 'QKHvzdRbM2pNTv0S1XKkl+l5RHJyhsnqhhwwTX0xVQPwDrSSB6AYDoZtumL8ut90i3v6sqQE2gBkDWE3iAvkD2R3DHaiMmZY9vNKDmJTZbdE'
+
+    - name: rabbitmq:3.13.3-management
+      alias: test-rabbit
+      variables:
+        RABBITMQ_DEFAULT_USER: 'test-rabbit-admin'
+        RABBITMQ_DEFAULT_PASS: 'test-rabbit-password'
+        RABBITMQ_DEFAULT_VHOST: 'test-vhost'
+
   script:
     - python -m pip install -r requirements-dev.txt
     - python -m unittest
