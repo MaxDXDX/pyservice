@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # you might import pydantic models to use it in your config:
 # from pydantic import ()
 
@@ -18,4 +20,5 @@ class Config(DjangoBasedMicroserviceConfig):
     # any other attributes
 
 
-config = Config()
+config = Config(_env_file=Path(__file__).parent / '.env',
+                _env_file_encoding='utf-8')
