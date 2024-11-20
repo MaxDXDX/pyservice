@@ -5,7 +5,6 @@ import toml
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings as PydanticBaseSettings
-from pydantic_settings import SettingsConfigDict
 
 import yaml
 
