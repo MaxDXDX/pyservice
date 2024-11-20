@@ -3,6 +3,8 @@ import inspect
 from logging import StreamHandler, FileHandler, Logger, getLogger, Formatter
 from pathlib import Path
 
+from seqlog.structured_logging import SeqLogHandler
+
 
 def get_file_of_logger(logger: Logger) -> Path:
     log_file = next(filter(
@@ -37,6 +39,7 @@ def get_logger_for_pyfile(
         directory_for_logs: Path,
         with_path: bool = False,
         erase: bool = True,
+        seq_params: dict = None,
 ) -> Logger:
     pyfile = Path(pyfile)
     stem = pyfile.stem
@@ -47,9 +50,36 @@ def get_logger_for_pyfile(
         log_name=log_name,
         directory_for_logs=directory_for_logs,
         erase=erase,
+        seq_params=seq_params,
     )
     logger.debug('Logger for %s: %s', pyfile, logger)
     return logger
+
+
+def add_seq_handler_to_logger(
+        logger: Logger,
+        url: str,
+        api_key: str = 'NYvOdrr5WVwThJfUXWTs',
+        level: str = 'DEBUG',
+):
+    # pylint:disable=C0123
+    current_seq_handlers = [_ for _ in logger.handlers
+                            if type(_) == SeqLogHandler]
+
+    assert len(current_seq_handlers) <= 1
+    if len(current_seq_handlers) == 1:
+        return
+
+    formatter = Formatter(
+        style='{',
+    )
+    seq_handler = SeqLogHandler(
+        server_url=url,
+        api_key=api_key,
+    )
+    seq_handler.setFormatter(formatter)
+    seq_handler.setLevel(level)
+    logger.addHandler(seq_handler)
 
 
 def indented_decorator(func):
@@ -73,6 +103,7 @@ def get_logger(
         log_name: str,
         directory_for_logs: Path,
         erase: bool = True,
+        seq_params: dict = None,
 ) -> Logger:
     log = getLogger(log_name)
     # if indented:
@@ -114,8 +145,23 @@ def get_logger(
 
     remove_all_stream_handlers(log)
 
-    if len(log.handlers) != 2:
+    seq_handlers = [_ for _ in log.handlers if type(_) == SeqLogHandler]
+    assert len(seq_handlers) <= 1
+
+    desired_number_of_handlers = 3 if seq_handlers else 2
+
+    if len(log.handlers) != desired_number_of_handlers:
         raise RuntimeError(f'number of handlers for {log_name} is not 2: '
                            f'{log.handlers}')
     log.setLevel('DEBUG')
+
+    if seq_params:
+        add_seq_handler_to_logger(
+            log, seq_params['url'],
+            seq_params['api_key'],
+            seq_params.get('level', 'DEBUG'),
+        )
+
+    log.propagate = False
+
     return log

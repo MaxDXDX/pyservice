@@ -15,6 +15,8 @@ class AppConfig(BaseSettings):
     app_human_name: str = 'Приложение на Python'
 
     # put here any loggers from other modules to create default handlers
+    seq_url: str | None = 'http://localhost:15080/'
+    seq_api_key: str | None = 'NYvOdrr5WVwThJfUXWTs'
     tracked_loggers: list[str] = []
 
 
@@ -25,13 +27,14 @@ class MicroserviceConfig(AppConfig):
     instance_human_name: str = 'Микросервис на Python'
 
     time_to_wait_celery_test_file: int = 60
+    rabbitmq_hostname: str = 'localhost'
+    rabbitmq_port: str = '15672'
+    rabbitmq_vhost: str = 'test-vhost'
+    rabbitmq_username: str = 'test-rabbit-admin'
+    rabbitmq_password: str = 'test-rabbit-password'
 
-    rabbitmq_hostname: str = 'mb.cebb.pro'
-    rabbitmq_port: str = '50001'
-    rabbitmq_vhost: str = 'vhost'
-    rabbitmq_username: str = 'admin'
-    rabbitmq_password: str = 'rabbit-initial-password'
     default_celery_queue: str = 'cluster'
+
     tgs_server_url: str = '10.0.80.2:50051'
     tg_group_for_system_notifications: str = '-4101022781'
     tg_group_for_tests: str = '-4138637604'

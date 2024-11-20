@@ -14,6 +14,11 @@ class TextToolsTestCase(TestCase):
         expected = 'back-to-the-future'
         self.assertEqual(text_tools.to_kebab(original), expected)
 
+    def test_convert_to_kebab_2(self):
+        original = 'back_to_the_future'
+        expected = 'back-to-the-future'
+        self.assertEqual(text_tools.to_kebab(original), expected)
+
     def test_convert_to_snake(self):
         original = 'BackToTheFuture'
         expected = 'back_to_the_future'

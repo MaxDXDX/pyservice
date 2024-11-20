@@ -12,6 +12,7 @@ RANDOM_ENGLISH_WORDS =  current_dir / 'random_english_words.txt'
 def to_kebab(text: str) -> str:
     """Convert string to kebab-case form."""
     kebab_case = sub(r'(?<!^)(?=[A-Z])', '-', text).lower()
+    kebab_case = sub(r'_', '-', kebab_case).lower()
     return kebab_case
 
 

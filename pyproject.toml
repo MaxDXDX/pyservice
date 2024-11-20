@@ -14,7 +14,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pytz",
-#    "yattag",
     "aiofiles",
     "celery",
     "pydantic",
@@ -23,6 +22,8 @@ dependencies = [
     "PyYAML",
     "pika",
     "toml",
+    "jinja2==3.1.4",
+    "seqlog==0.3.31",
 
     "tgs-client @ git+https://pack:F6VxZN5xuHrd5fsdK9_V@git.cebb.pro/ias-phoenix-native/submodules/telegram-service-client.git@_package",
 ]

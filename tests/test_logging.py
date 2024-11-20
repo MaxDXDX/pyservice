@@ -1,7 +1,7 @@
 """
 Tests.
 """
-import unittest
+
 from unittest import TestCase
 from pyservice import log_tools
 from pyservice.manager.manager import default_app_manager
@@ -15,7 +15,6 @@ class Calculator:
         return a * b
 
 
-@unittest.skip('TODO: works only isolated from other tests?')
 class LoggingTestCase(TestCase):
     """Logging tests."""
 
@@ -24,6 +23,13 @@ class LoggingTestCase(TestCase):
 
     def tearDown(self) -> None:
         log.debug('LoggingTestCase test done!')
+
+    def test_logging_to_seq(self):
+        log.debug('hello SEQ - I am the DEBUG message.')
+        log.info('hello SEQ - I am the INFO message.')
+        log.warning('hello SEQ - I am the WARNING message.')
+        log.error('hello SEQ - I am the ERROR message.')
+        log.critical('hello SEQ - I am the CRITICAL message.')
 
     def test_logging_function(self):
         log_tools.clean_file_for_logger(log)

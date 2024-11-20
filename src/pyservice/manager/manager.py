@@ -7,6 +7,7 @@ from datetime import datetime as dt
 import time
 import logging
 from pathlib import Path
+import pkg_resources
 
 import celery.exceptions
 from celery import Celery
@@ -54,21 +55,33 @@ class AppManager:
         """For running tests."""
         self.test_mode = True
 
+    @property
+    def seq_params(self) -> dict | None:
+        if self.config.seq_url and self.config.seq_api_key:
+            return {
+                'url': self.config.seq_url,
+                'api_key': self.config.seq_api_key,
+            }
+
     def get_manager_logger(self):
         logger_name = f'{self.app_ref}-manager'
         log = log_tools.get_logger(
             log_name=logger_name,
             directory_for_logs=self.directory_for_logs,
             erase=self.config.delete_logs_on_start,
+            seq_params=self.seq_params,
         )
         return log
 
 
     def set_root_logger(self):
+        seq_params = self.seq_params
+        # seq_params['level'] = 'ERROR'
         root_log = log_tools.get_logger(
             log_name='root',
             directory_for_logs=self.directory_for_logs,
             erase=self.config.delete_logs_on_start,
+            seq_params=seq_params,
         )
         log_tools.remove_all_stream_handlers(logger=root_log)
 
@@ -206,6 +219,7 @@ class AppManager:
             directory_for_logs=self.directory_for_logs,
             with_path=with_path,
             erase=self.config.delete_logs_on_start,
+            seq_params=self.seq_params,
         )
         return logger
 
@@ -216,6 +230,15 @@ class AppManager:
                 directory_for_logs=self.directory_for_logs,
                 erase=self.config.delete_logs_on_start,
             )
+
+    def get_installed_packages(self) -> list[str]:
+        installed_packages = list(pkg_resources.working_set)
+        names = [_.project_name for _ in installed_packages]
+        return names
+
+    def is_pyservice_installed(self) -> bool:
+        installed_packages = self.get_installed_packages()
+        return 'pyservice' in installed_packages
 
     def print_summary(self):
         return (
@@ -377,6 +400,15 @@ class MicroServiceManager(AppManager):
             queues = ','.join(queues)
         return queues
 
+    async def check_connection_to_seq(self) -> bool | None:
+        seq_url = self.config.seq_url
+        if not seq_url:
+            return
+        self.log.info('check TCP connection to SEQ (%s)', seq_url)
+        await wait_for_tcp_service(seq_url)
+        self.log.info('OK - SEQ on wire!')
+        return True
+
     async def check_connection_to_rabbit_mq(self):
         rabbit_hostname = self.config.rabbitmq_hostname
         rabbit_port = self.config.rabbitmq_port
@@ -396,6 +428,7 @@ class MicroServiceManager(AppManager):
     async def preflight_checks(self):
         self.log.info('performing preflight checks for microservice %s',
                       self.microservice.ref)
+        await self.check_connection_to_seq()
         await self.check_connection_to_telegram_server()
         await self.check_connection_to_rabbit_mq()
         self.test_rabbit_by_pika()

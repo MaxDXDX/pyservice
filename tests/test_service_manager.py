@@ -51,6 +51,10 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
         self.mng = MicroServiceManager(cfg, __file__)
         self.mng.enable_test_mode()
 
+    async def test_check_connection_to_seq(self):
+        is_ok = await self.mng.check_connection_to_seq()
+        self.assertTrue(is_ok is True)
+
     async def test_check_connection_to_rabbit(self):
         await self.mng.check_connection_to_rabbit_mq()
 
@@ -117,3 +121,11 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
     def test_send_system_notification_to_telegram_chat(self):
         msg = 'TEST: system notification'
         self.mng.system_notification(msg)
+
+    def test_get_installed_packages(self):
+        installed_packages = self.mng.get_installed_packages()
+        self.assertIsInstance(installed_packages, list)
+        self.assertGreater(len(installed_packages), 0)
+
+        is_pyservice_installed = self.mng.is_pyservice_installed()
+        self.assertTrue(is_pyservice_installed is True)
