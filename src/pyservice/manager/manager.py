@@ -415,13 +415,13 @@ class MicroServiceManager(AppManager):
     async def check_connection_to_rabbit_mq(self):
         rabbit_hostname = self.config.rabbitmq_hostname
         rabbit_port = self.config.rabbitmq_port
+        print('config.rabbitmq_hostname: ', rabbit_hostname)
+        print('config.rabbit_port: ', rabbit_port)
         self.log.info('check TCP connection to RabbitMQ (%s:%s)',
                       rabbit_hostname, rabbit_port)
         await wait_for_tcp_service(
             (rabbit_hostname, rabbit_port)
         )
-        print('config.rabbitmq_hostname: ', rabbit_hostname)
-        print('config.rabbit_port: ', rabbit_port)
         self.log.info('OK - RabbitMQ on wire!')
 
     async def check_connection_to_telegram_server(self):
