@@ -26,7 +26,6 @@ class TcpWait(IsolatedAsyncioTestCase):
             self.assertEqual(hostname, normalized.hostname)
             self.assertEqual(port, normalized.port)
 
-
     async def test_wait_for_service_as_tuple(self):
         target_as_tuple = ('google.com', 443)
         found = await tcpwait.wait_for_tcp_service(target_as_tuple, 2)

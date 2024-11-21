@@ -38,7 +38,7 @@ def normalize_tcp_service(
         return TcpService(*initial)
     elif isinstance(initial, TcpService):
         return initial
-    elif isinstance(initial, Url):
+    elif isinstance(initial, (Url, HttpUrl)):
         hostname = initial.host
         port = initial.port
         return TcpService(hostname, port)
