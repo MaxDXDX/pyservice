@@ -16,11 +16,11 @@ test:
     seq_url: 'http://test-seq/'
     seq_api_key: 'some-key'
 
-    rabbitmq_hostname: 'test-rabbit'
-    rabbitmq_port: '5672'
-    rabbitmq_username: 'test-rabbit-admin'
-    rabbitmq_password: 'test-rabbit-password'
-    rabbitmq_vhost: 'test-vhost'
+    RABBITMQ_HOSTNAME: 'test-rabbit'
+    RABBITMQ_PORT: '5672'
+    RABBITMQ_USERNAME: 'test-rabbit-admin'
+    RABBITMQ_PASSWORD: 'test-rabbit-password'
+    RABBITMQ_VHOST: 'test-vhost'
 
   services:
     - name: datalust/seq:2024.3
