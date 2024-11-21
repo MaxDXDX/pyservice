@@ -39,11 +39,8 @@ test:
 
   script:
     - cp tests/env-files-for-tests/.env* src/pyservice/pyconfig/
-    - ls tests
-    - ls tests/env-files-for-tests/ -alh
-    - ls src/pyservice/pyconfig/ -alh
     - python -m pip install -r requirements-dev.txt
-    - python -m unittest -k test_wait_for_service_as_pydantic_url
+    - python -m unittest --failfast
   except:
     - _package
 
