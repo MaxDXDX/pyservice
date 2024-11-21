@@ -5,8 +5,10 @@ Tests.
 from unittest import TestCase
 from pyservice import log_tools
 from pyservice.manager.manager import default_app_manager
+from pyservice.manager.manager import get_default_microservice_manager
 
 log = default_app_manager.get_logger_for_pyfile(__file__)
+ms_log = get_default_microservice_manager().get_logger_for_pyfile(__file__)
 
 
 class Calculator:
@@ -25,11 +27,11 @@ class LoggingTestCase(TestCase):
         log.debug('LoggingTestCase test done!')
 
     def test_logging_to_seq(self):
-        log.debug('hello SEQ - I am the DEBUG message.')
-        log.info('hello SEQ - I am the INFO message.')
-        log.warning('hello SEQ - I am the WARNING message.')
-        log.error('hello SEQ - I am the ERROR message.')
-        log.critical('hello SEQ - I am the CRITICAL message.')
+        ms_log.debug('hello SEQ - I am the DEBUG message.')
+        ms_log.info('hello SEQ - I am the INFO message.')
+        ms_log.warning('hello SEQ - I am the WARNING message.')
+        ms_log.error('hello SEQ - I am the ERROR message.')
+        ms_log.critical('hello SEQ - I am the CRITICAL message.')
 
     def test_logging_function(self):
         log_tools.clean_file_for_logger(log)

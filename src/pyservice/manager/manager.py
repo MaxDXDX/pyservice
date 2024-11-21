@@ -62,6 +62,9 @@ class AppManager:
             return {
                 'url': self.config.seq_url,
                 'api_key': self.config.seq_api_key,
+                'global_properties': {
+                    'app': self.app_ref,
+                }
             }
 
     def get_manager_logger(self):
@@ -300,6 +303,14 @@ class MicroServiceManager(AppManager):
         super().__init__(config_of_microservice, *args, **kwargs)
         self.init_celery_app()
         self.post_microservice_manager_init()
+
+    @property
+    def seq_params(self) -> dict | None:
+        base = super().seq_params
+        if base:
+            global_properties = base['global_properties']
+            global_properties['microservice'] = self.microservice.ref
+        return base
 
     def post_app_manager_init(self):
         pass

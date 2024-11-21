@@ -34,11 +34,12 @@ TcpServiceFormat = Type[TcpService | tuple[str, str | int] | str | HttpUrl]
 
 def normalize_tcp_service(
         initial: TcpServiceFormat) -> TcpService:
+    type_name = str(type(initial))
     if isinstance(initial, tuple):
         return TcpService(*initial)
     elif isinstance(initial, TcpService):
         return initial
-    elif isinstance(initial, (Url, HttpUrl)):
+    elif '.Url' in type_name or 'HttpUrl' in type_name:
         hostname = initial.host
         port = initial.port
         return TcpService(hostname, port)

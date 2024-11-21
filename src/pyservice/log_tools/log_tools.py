@@ -3,6 +3,7 @@ import inspect
 from logging import StreamHandler, FileHandler, Logger, getLogger, Formatter
 from pathlib import Path
 
+import seqlog
 from seqlog.structured_logging import SeqLogHandler
 
 
@@ -156,6 +157,8 @@ def get_logger(
     log.setLevel('DEBUG')
 
     if seq_params:
+        global_properties = seq_params.get('global_properties', {})
+        seqlog.set_global_log_properties(**global_properties)
         add_seq_handler_to_logger(
             log, seq_params['url'],
             seq_params['api_key'],
