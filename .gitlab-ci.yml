@@ -39,6 +39,7 @@ test:
 
   script:
     - cp tests/env-files-for-tests/.env* src/pyservice/pyconfig/
+    - ls tests
     - ls tests/env-files-for-tests/
     - ls src/pyservice/pyconfig/
     - python -m pip install -r requirements-dev.txt
