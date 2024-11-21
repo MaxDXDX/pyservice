@@ -12,6 +12,21 @@ from pydantic import HttpUrl
 class TcpWait(IsolatedAsyncioTestCase):
     """Test case."""
 
+    def test_normalizing(self):
+        tests = [
+            ('tcp://111.222.333.444:5555', '111.222.333.444', 5555),
+            ('http://example.com', 'example.com', 80),
+            ('https://example.com', 'example.com', 443),
+            ('http://example.com/path/', 'example.com', 80),
+            ('https://example.com/path/', 'example.com', 443),
+            ('my-hostname:9999', 'my-hostname', 9999),
+        ]
+        for as_text, hostname, port in tests:
+            normalized = tcpwait.normalize_tcp_service(as_text)
+            self.assertEqual(hostname, normalized.hostname)
+            self.assertEqual(port, normalized.port)
+
+
     async def test_wait_for_service_as_tuple(self):
         target_as_tuple = ('google.com', 443)
         found = await tcpwait.wait_for_tcp_service(target_as_tuple, 2)

@@ -43,27 +43,48 @@ def normalize_tcp_service(
         port = initial.port
         return TcpService(hostname, port)
     elif isinstance(initial, str):
-        if initial[-1] == '/':
-            initial = initial[:-1]
-        initial = initial.strip()
-        is_http = 'http://' in initial
-        is_https = 'https://' in initial
-        if ':' not in initial:
-            raise ValueError(f'incorrect format for tcp service - {initial}')
-        if not is_http and not is_https:
-            parts = initial.partition(':')
-            hostname = parts[0]
-            port = int(parts[2])
-        else:
-            without_scheme = initial.replace('http://', '')
-            without_scheme = without_scheme.replace('https://', '')
-            if ':' in without_scheme:
-                port = without_scheme.partition(':')[2]
-                hostname = without_scheme.partition(':')[0]
+        if '://' not in initial:
+            if ':' not in initial:
+                raise ValueError(
+                    f'incorrect format for tcp service - {initial}, '
+                    f'type - {type(initial)}')
             else:
-                port = 80 if 'http://' in initial else 443
-                hostname = initial.partition('://')[2].partition('/')[0]
-        return TcpService(hostname, port)
+                hostname = initial.partition(':')[0]
+                port = initial.partition(':')[2]
+                try:
+                    port = int(port)
+                except TypeError as e:
+                    raise ValueError(
+                        f'incorrect format for tcp service - {initial}, '
+                        f'type - {type(initial)}') from e
+                else:
+                    return TcpService(hostname, port)
+
+        else:
+            url = Url(initial)
+            return normalize_tcp_service(url)
+        # print('url', url)
+        # if initial[-1] == '/':
+        #     initial = initial[:-1]
+        # initial = initial.strip()
+        # scheme = initial.partition('://')[0]
+        # without_scheme = initial.partition('://')[2]
+        # is_http = scheme == 'http'
+        # is_https = scheme == 'https'
+        # if not is_http and not is_https and ':' not in initial:
+        #     raise ValueError(f'incorrect format for tcp service - {initial}')
+        # if not is_http and not is_https:
+        #     parts = initial.partition(':')
+        #     hostname = parts[0]
+        #     port = int(parts[2])
+        # else:
+        #     if ':' in without_scheme:
+        #         port = without_scheme.partition(':')[2]
+        #         hostname = without_scheme.partition(':')[0]
+        #     else:
+        #         port = 80 if 'http://' in initial else 443
+        #         hostname = initial.partition('://')[2].partition('/')[0]
+        # return TcpService(hostname, port)
     else:
         raise ValueError(f'incorrect format for tcp service - {initial}, '
                          f'type - {type(initial)}')
