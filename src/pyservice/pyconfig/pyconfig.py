@@ -1,5 +1,7 @@
 """Configurations for app and microservices."""
 
+from pathlib import Path
+
 from pydantic_extra_types.timezone_name import TimeZoneName
 from pydantic import HttpUrl
 
@@ -14,9 +16,10 @@ class AppConfig(BaseSettings):
 
     app_human_name: str = 'Приложение на Python'
 
+    seq_url: str | None = None
+    seq_api_key: str | None = None
+
     # put here any loggers from other modules to create default handlers
-    seq_url: str | None = 'http://localhost:15080/'
-    seq_api_key: str | None = 'NYvOdrr5WVwThJfUXWTs'
     tracked_loggers: list[str] = []
 
 
@@ -114,8 +117,19 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
     keycloak_url: HttpUrl = 'http://keycloak:8080/auth'
 
 
-default_app_config = AppConfig()
-default_microservice_config = MicroserviceConfig()
-default_backuper_config = BackuperConfig()
-default_django_based_microservice_config = DjangoBasedMicroserviceConfig()
+default_app_config = AppConfig(
+    _env_file=Path(__file__).parent / '.env.app',
+    _env_file_encoding='utf-8')
+
+default_microservice_config = MicroserviceConfig(
+    _env_file=Path(__file__).parent / '.env.ms',
+    _env_file_encoding='utf-8')
+
+default_backuper_config = BackuperConfig(
+    _env_file=Path(__file__).parent / '.env.ms',
+    _env_file_encoding='utf-8')
+
+default_django_based_microservice_config = DjangoBasedMicroserviceConfig(
+    _env_file=Path(__file__).parent / '.env.ms',
+    _env_file_encoding='utf-8')
 

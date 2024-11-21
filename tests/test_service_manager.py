@@ -8,10 +8,9 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from celery import Celery
 
 
-from pyservice.pyconfig.pyconfig import MicroserviceConfig
 from pyservice.pyconfig.pyconfig import default_microservice_config
-from pyservice.manager.manager import MicroServiceManager
-from pyservice.manager.manager import default_app_manager
+from pyservice.manager.manager import get_default_microservice_manager
+from pyservice.manager.manager import get_default_app_manager
 from pyservice.domain import cluster
 
 
@@ -45,10 +44,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
 
-        class MyConfig(MicroserviceConfig):
-            pass
-        cfg = MyConfig(__file__)
-        self.mng = MicroServiceManager(cfg, __file__)
+        self.mng = get_default_microservice_manager()
         self.mng.enable_test_mode()
 
     async def test_check_connection_to_seq(self):
@@ -69,7 +65,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
         self.assertIsInstance(app, Celery)
 
     def test_base_directories(self) -> None:
-        manager = default_app_manager
+        manager = get_default_app_manager()
 
         for attr in [
             'directory_for_app',

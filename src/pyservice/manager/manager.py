@@ -24,6 +24,7 @@ from pyservice.pyconfig.pyconfig import (
     DjangoBasedMicroserviceConfig
 )
 from pyservice.pyconfig.pyconfig import default_app_config
+from pyservice.pyconfig.pyconfig import default_microservice_config
 from pyservice.tcpwait.tcpwait import wait_for_tcp_service
 from pyservice.files import files
 from pyservice.files.files import create_if_not_yet
@@ -272,6 +273,8 @@ class AppManager:
                        self.directory_for_tmp)
         self.log.debug('- directory for logs: %s',
                        self.directory_for_logs)
+        self.log.debug('- parameters for SEQ: %s',
+                       self.seq_params)
 
     def on_start(self):
         print('performing <on start> operations...')
@@ -901,3 +904,6 @@ default_app_manager = AppManager(default_app_config, __file__)
 
 def get_default_app_manager():
     return AppManager(default_app_config, __file__)
+
+def get_default_microservice_manager():
+    return MicroServiceManager(default_microservice_config, __file__)
