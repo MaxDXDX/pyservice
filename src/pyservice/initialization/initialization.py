@@ -35,10 +35,16 @@ def gather_init_data_for_app() -> InitializationData:
             type=str, default='1.24.0')
         docker_django_port = click.prompt(
             'external port for app`s container: ',
-            type=str, default='8011')
+            type=str, default='12001')
         docker_db_port = click.prompt(
             'external port for db`s container: ',
-            type=str, default='8411')
+            type=str, default='12002')
+        rabbit_local_port = click.prompt(
+            'external port for RabbitMQ`s local container: ',
+            type=str, default='12003')
+        seq_local_port = click.prompt(
+            'external port for seq`s local container: ',
+            type=str, default='12004')
         url_prefix = click.prompt(
             'url prefix for all app`s url paths: ',
             type=str, default=text_tools.to_kebab(app_name))
@@ -49,6 +55,8 @@ def gather_init_data_for_app() -> InitializationData:
             is_django_powered=is_django_powered,
             docker_django_port=docker_django_port,
             docker_db_port=docker_db_port,
+            seq_local_port=seq_local_port,
+            rabbit_local_port=rabbit_local_port,
             docker_nginx_version=docker_nginx_version,
             docker_db_version=docker_db_version,
             url_prefix=url_prefix,

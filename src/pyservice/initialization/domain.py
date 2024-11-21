@@ -90,6 +90,8 @@ class InitializationData(base.BaseModel):
     docker_django_port: str
     docker_db_port: str
     docker_db_version: str = '17.0'
+    rabbit_local_port: str
+    seq_local_port: str
     docker_nginx_version: str = '1.22.0'
 
     url_prefix: str = 'prefix'

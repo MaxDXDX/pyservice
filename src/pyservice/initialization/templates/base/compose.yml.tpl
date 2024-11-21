@@ -1,6 +1,6 @@
 services:
   app:
-    restart: 'no'
+    restart: 'always'
     hostname: {{ app.app_name }}-app
     ports:
       - {{ app.docker_django_port }}:8000
@@ -20,7 +20,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   db:
-    restart: 'no'
+    restart: 'always'
     hostname: {{ app.app_name }}-db
     ports:
       - {{ app.docker_db_port }}:5432
@@ -33,7 +33,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   nginx:
-    restart: 'no'
+    restart: 'always'
     hostname: {{ app.app_name }}-nginx
     build:
       context: ./nginx

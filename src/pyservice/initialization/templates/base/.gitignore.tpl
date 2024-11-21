@@ -11,3 +11,4 @@ restart-celery.sh
 artefacts
 
 compose.override.yml
+.env
