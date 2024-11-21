@@ -38,6 +38,7 @@ test:
         RABBITMQ_DEFAULT_VHOST: 'test-vhost'
 
   script:
+    - cp tests/env-files-for-tests/.env* src/pyservice/pyconfig/
     - python -m pip install -r requirements-dev.txt
     - python -m unittest
   except:

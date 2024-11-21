@@ -10,4 +10,4 @@ src/*
 !src/pyservice
 
 restart-celery.sh
-.env*
+src/pyservice/pyconfig/.env*

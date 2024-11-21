@@ -45,6 +45,7 @@ class MicroserviceManagerTestCase(IsolatedAsyncioTestCase):
     def setUp(self) -> None:
 
         self.mng = get_default_microservice_manager()
+        assert self.mng.seq_params
         self.mng.enable_test_mode()
 
     async def test_check_connection_to_seq(self):
