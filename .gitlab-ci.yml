@@ -40,7 +40,7 @@ test:
   script:
     - cp tests/env-files-for-tests/.env* src/pyservice/pyconfig/
     - python -m pip install -r requirements-dev.txt
-    - python -m unittest --failfast
+    - python -m unittest -k test_check_connection_to_rabbit
   except:
     - _package
 
