@@ -64,7 +64,8 @@ class AppManager:
                 'api_key': self.config.seq_api_key,
                 'global_properties': {
                     'app': self.app_ref,
-                }
+                },
+                'prefix_for_logger_name': 'seq-prefix',
             }
 
     def get_manager_logger(self):
@@ -80,7 +81,8 @@ class AppManager:
 
     def set_root_logger(self):
         seq_params = self.seq_params
-        # seq_params['level'] = 'ERROR'
+        if seq_params:
+            seq_params['extra_field'] = {'fromRoot': True}
         root_log = log_tools.get_logger(
             log_name='root',
             directory_for_logs=self.directory_for_logs,

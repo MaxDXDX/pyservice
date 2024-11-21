@@ -1,6 +1,7 @@
 """Tool for loggers."""
 import inspect
 from logging import StreamHandler, FileHandler, Logger, getLogger, Formatter
+import logging
 from pathlib import Path
 
 import seqlog
@@ -60,8 +61,9 @@ def get_logger_for_pyfile(
 def add_seq_handler_to_logger(
         logger: Logger,
         url: str,
-        api_key: str = 'NYvOdrr5WVwThJfUXWTs',
+        api_key: str,
         level: str = 'DEBUG',
+        extra_field: dict = None,
 ):
     # pylint:disable=C0123
     current_seq_handlers = [_ for _ in logger.handlers
@@ -81,6 +83,17 @@ def add_seq_handler_to_logger(
     seq_handler.setFormatter(formatter)
     seq_handler.setLevel(level)
     logger.addHandler(seq_handler)
+    if extra_field:
+        class ContextFilter(logging.Filter):
+            def filter(self, record):
+                try:
+                    log_props: dict = getattr(record, 'log_props')
+                except AttributeError:
+                    record.log_props = extra_field
+                else:
+                    record.log_props = {**log_props, **extra_field}
+                return True
+        seq_handler.addFilter(ContextFilter())
 
 
 def indented_decorator(func):
@@ -156,13 +169,14 @@ def get_logger(
                            f'{log.handlers}')
     log.setLevel('DEBUG')
 
-    if seq_params:
+    if seq_params and not seq_handlers:
         global_properties = seq_params.get('global_properties', {})
         seqlog.set_global_log_properties(**global_properties)
         add_seq_handler_to_logger(
             log, seq_params['url'],
             seq_params['api_key'],
             seq_params.get('level', 'DEBUG'),
+            seq_params.get('extra_field'),
         )
 
     log.propagate = False
