@@ -8,6 +8,28 @@ import seqlog
 from seqlog.structured_logging import SeqLogHandler
 
 
+class CustomizedSeqHandler(SeqLogHandler):
+    """Tuned SeqLogHandler."""
+
+    def __init__(self, *args, **kwargs):
+        level = kwargs.pop('level')
+        super().__init__(*args, **kwargs)
+        formatter = Formatter(
+            style='{',
+        )
+        self.setFormatter(formatter)
+        self.setLevel(level)
+
+    def emit(self, record):
+        """Sometimes a default SeqLogHandler stop its consumer.
+
+        We are going to force run a stopped consumer.
+        """
+        if not self.consumer.is_running:
+            self.consumer.start()
+        super().emit(record)
+
+
 def get_file_of_logger(logger: Logger) -> Path:
     log_file = next(filter(
         lambda h: isinstance(h, FileHandler),
@@ -67,21 +89,17 @@ def add_seq_handler_to_logger(
 ):
     # pylint:disable=C0123
     current_seq_handlers = [_ for _ in logger.handlers
-                            if type(_) == SeqLogHandler]
+                            if type(_) == CustomizedSeqHandler]
 
     assert len(current_seq_handlers) <= 1
     if len(current_seq_handlers) == 1:
         return
 
-    formatter = Formatter(
-        style='{',
-    )
-    seq_handler = SeqLogHandler(
+    seq_handler = CustomizedSeqHandler(
         server_url=url,
         api_key=api_key,
+        level=level,
     )
-    seq_handler.setFormatter(formatter)
-    seq_handler.setLevel(level)
     logger.addHandler(seq_handler)
     if extra_field:
         class ContextFilter(logging.Filter):
@@ -159,7 +177,7 @@ def get_logger(
 
     remove_all_stream_handlers(log)
 
-    seq_handlers = [_ for _ in log.handlers if type(_) == SeqLogHandler]
+    seq_handlers = [_ for _ in log.handlers if type(_) == CustomizedSeqHandler]
     assert len(seq_handlers) <= 1
 
     desired_number_of_handlers = 3 if seq_handlers else 2
