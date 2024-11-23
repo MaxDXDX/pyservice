@@ -306,6 +306,10 @@ class MicroServiceManager(AppManager):
         self.init_celery_app()
         self.post_microservice_manager_init()
 
+    def _self_checks(self):
+        # TODO: add basic selfchecks
+        pass
+
     @property
     def seq_params(self) -> dict | None:
         base = super().seq_params
@@ -505,9 +509,18 @@ class MicroServiceManager(AppManager):
 
             @app.task
             def self_check():
-                # TODO: add checks
-                self.log.info('Selfcheck for service %s has been passed',
-                              self.microservice.ref)
+                try:
+                    self._self_checks()
+                except Exception as e:
+                    self.log.critical(
+                        'ERROR during performing periodical selfcheck '
+                        'for service %s', self.microservice.ref)
+                    self.log.exception(e)
+                    raise e
+                else:
+                    self.log.debug(
+                        'Selfcheck for service %s has been passed',
+                        self.microservice.ref)
 
             @app.task
             def create_test_file():
@@ -525,7 +538,7 @@ class MicroServiceManager(AppManager):
             app.conf.beat_schedule = {
                 'periodic-selfscheck': {
                     'task': f'{self.app_ref}.self_check',
-                    'schedule': 5.0,
+                    'schedule': self.config.periodic_self_checks_period,
                     'options': {'queue': self.microservice.own_queue},
                 },
             }
