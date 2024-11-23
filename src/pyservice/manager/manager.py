@@ -1,5 +1,6 @@
 """The microservice manager."""
 
+import asyncio
 import os
 import sys
 import uuid
@@ -306,9 +307,21 @@ class MicroServiceManager(AppManager):
         self.init_celery_app()
         self.post_microservice_manager_init()
 
-    def _self_checks(self):
-        # TODO: add basic selfchecks
-        pass
+
+
+    def _async_self_checks_by_celery(self) -> list:
+        async_checks = [
+            self.check_connection_to_rabbit_mq(),
+            self.check_connection_to_seq(),
+            self.check_connection_to_telegram_server(),
+        ]
+        return async_checks
+
+    def _sync_self_checks_by_celery(self):
+        sync_tasks = [
+            self.test_rabbit_by_pika,
+        ]
+        return sync_tasks
 
     @property
     def seq_params(self) -> dict | None:
@@ -341,7 +354,7 @@ class MicroServiceManager(AppManager):
                 'on-celery-start-handler-is-ready')
 
     def write_celery_test_file(self):
-        self.log.warning('creating test file for celery - %s',
+        self.log.debug('creating test file for celery - %s',
                          self.celery_test_file)
         now = dt.now()
         self.celery_test_file.unlink(missing_ok=True)
@@ -509,17 +522,25 @@ class MicroServiceManager(AppManager):
 
             @app.task
             def self_check():
+                self.log.debug('launching periodic self checks by Celery ...')
                 try:
-                    self._self_checks()
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    async_checks = asyncio.gather(
+                        *self._async_self_checks_by_celery())
+                    loop.run_until_complete(async_checks)
+                    for _ in self._sync_self_checks_by_celery():
+                        _()
                 except Exception as e:
-                    self.log.critical(
-                        'ERROR during performing periodical selfcheck '
-                        'for service %s', self.microservice.ref)
+                    msg = (f'ERROR during performing periodical self-check '
+                           f'for service {self.microservice.ref}: {e}')
+                    self.log.critical(msg)
                     self.log.exception(e)
+                    self.system_notification(msg)
                     raise e
                 else:
                     self.log.debug(
-                        'Selfcheck for service %s has been passed',
+                        'self-checks for service %s have been passed',
                         self.microservice.ref)
 
             @app.task
@@ -698,6 +719,7 @@ class MicroServiceManager(AppManager):
         self.system_notification(f'{self.microservice} has been started!')
 
     def test_rabbit_by_pika(self):
+        self.log.debug('test RabbitMQ by sending a test message...')
         print('Checking RabbitMQ by test message...')
         test_message = f'test message {uuid.uuid4()}'
         test_queue = f'test-{self.microservice.own_queue}'
@@ -721,6 +743,7 @@ class MicroServiceManager(AppManager):
         channel.queue_delete(queue=test_queue)
         connection.close()
         print('RabbitMQ is working!')
+        self.log.debug('RabbitMQ is working for us!')
 
     def log_summary(self):
         super().log_summary()
@@ -870,12 +893,17 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         super().on_start()
         self.erase_web_static_files_directory()
 
+    def _async_self_checks_by_celery(self) -> list:
+        base = super()._async_self_checks_by_celery()
+        base.append(self.check_connection_to_db())
+        base.append(self.check_connection_to_keycloak())
+        return base
+
     async def preflight_checks(self):
         await super().preflight_checks()
         assert self.django_directory.is_dir()
         await self.check_connection_to_db()
-        if self.config.is_keycloak_auth_enabled:
-            await self.check_connection_to_keycloak()
+        await self.check_connection_to_keycloak()
 
     async def check_connection_to_db(self):
         hostname = self.config.django_db_hostname
@@ -888,10 +916,11 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         self.log.info('OK - django`s database on wire!')
 
     async def check_connection_to_keycloak(self):
-        self.log.info('checking TCP connection to keycloak at %s',
-                      self.config.keycloak_url)
-        await wait_for_tcp_service(self.config.keycloak_url)
-        self.log.info('OK - keycloak on wire!')
+        if self.config.is_keycloak_auth_enabled:
+            self.log.info('checking TCP connection to keycloak at %s',
+                          self.config.keycloak_url)
+            await wait_for_tcp_service(self.config.keycloak_url)
+            self.log.info('OK - keycloak on wire!')
 
     def log_summary(self):
         super().log_summary()
