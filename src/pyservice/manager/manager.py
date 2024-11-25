@@ -559,7 +559,8 @@ class MicroServiceManager(AppManager):
             app.conf.beat_schedule = {
                 'periodic-selfscheck': {
                     'task': f'{self.app_ref}.self_check',
-                    'schedule': self.config.periodic_self_checks_period,
+                    'schedule':
+                        self.periodic_self_checks_period_for_celery_beat,
                     'options': {'queue': self.microservice.own_queue},
                 },
             }
@@ -570,6 +571,15 @@ class MicroServiceManager(AppManager):
         else:
             self.log.debug('celery app initialized successfully')
             return app
+
+    @property
+    def periodic_self_checks_period_for_celery_beat(self) -> int | str:
+        try:
+            self_checks_period = int(
+                self.config.periodic_self_checks_period)
+        except ValueError:
+            self_checks_period = str(self.config.periodic_self_checks_period)
+        return self_checks_period
 
     def on_celery_worker_ready(self, sender):
         with sender.app.connection() as conn:

@@ -38,7 +38,7 @@ class MicroserviceConfig(AppConfig):
 
     default_celery_queue: str = 'cluster'
 
-    periodic_self_checks_period: str | int = 600  # seconds or CRON string
+    periodic_self_checks_period: str = '600'  # seconds or CRON string
 
     tgs_server_url: str = '10.0.80.2:50051'
     tg_group_for_system_notifications: str = '-4101022781'
