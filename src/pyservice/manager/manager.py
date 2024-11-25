@@ -478,7 +478,15 @@ class MicroServiceManager(AppManager):
             task_name: str,
             args: tuple | dict = None,
     ):
-        self.log.debug('adding task to celery scheduler...')
+        # ATTENTION !!!
+        # DO NOT USE ANY LOG HERE like:
+        # self.log.debug('adding task to celery scheduler...')
+        # I don't know why but after that SEQ queue QueueConsumer can not
+        # get records from log Queue. Based on observations emit() method
+        # put log record to a Queue, but QueueConsumer always see an empty
+        # Queue (with empty deque)! That's very strange!!!
+        # I was unable to get the real reason, but I think it may be related
+        # with threads conflicts (Celery Sheduler and Seq Queue).
         scheduler: dict = self.celery_app.conf.beat_schedule
         scheduler[ref] = {
             'task': f'{self.app_ref}.{task_name}',
@@ -486,8 +494,9 @@ class MicroServiceManager(AppManager):
             'schedule': schedule,
             'options': {'queue': self.microservice.own_queue},
         }
-        self.log.debug('task added, current tasks: %s',
-                       self.celery_app.conf.beat_schedule)
+        # DO NOT UNCOMMENT (see ATTENTION ABOVE)
+        # self.log.debug('task added, current tasks: %s',
+        #                self.celery_app.conf.beat_schedule)
 
     def get_celery_app(self) -> Celery:
         self.log.debug('getting celery app...')
@@ -760,6 +769,8 @@ class MicroServiceManager(AppManager):
         self.log.debug('- celery app: %s', self.celery_app)
         self.log.debug('- microservice: %s', self.microservice)
         self.log.debug('- celery config: %s', self.celery_app.conf)
+        self.log.debug('- period for periodic self checks: %s',
+                       self.periodic_self_checks_period_for_celery_beat)
         # TODO:
         # self.log.debug('- celery registered tasks: %s',
         #                self.get_all_celery_tasks())
