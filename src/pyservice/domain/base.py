@@ -35,6 +35,10 @@ class BaseModel(PydanticBaseModel, SerializationMixin):
     pass
 
 
+class BaseFrozenModel(PydanticBaseModel, SerializationMixin):
+    model_config = ConfigDict(frozen=True)
+
+
 class BaseModelWithArbitraryFields(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

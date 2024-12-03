@@ -49,11 +49,8 @@ linter:
   stage: tests
   image: pipelinecomponents/pylint:latest
   script:
-    - wget https://git.cebb.pro/public-assets/assets/-/raw/main/pylintrc -O pylintrc
-    - echo "================================================================="
     - pylint src
     - pylint tests
-    - echo "================================================================="
   except:
     - _package
 

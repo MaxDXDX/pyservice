@@ -1,0 +1,39 @@
+services:
+  calculator-1:
+    restart: no
+    volumes:
+      - ./default_microservice/src:/etc/service/src
+      - ./default_microservice/artefacts_1:/etc/service/artefacts
+      - /home/max/development/pyservice/src/pyservice:/usr/local/lib/python3.11/site-packages/pyservice
+    environment:
+#      RABBITMQ_HOSTNAME: 'rabbit'
+#      RABBITMQ_PORT: '5672'
+#      RABBITMQ_VHOST: 'cluster-vhost'
+#      RABBITMQ_USERNAME: 'admin'
+#      RABBITMQ_PASSWORD: 'admin'
+      RABBITMQ_HOSTNAME: 'mb.cebb.pro'
+      RABBITMQ_PORT: '50001'
+      RABBITMQ_VHOST: 'vhost'
+      RABBITMQ_USERNAME: 'admin'
+      RABBITMQ_PASSWORD: 'rabbit-initial-password'
+
+  calculator-2:
+    restart: no
+    volumes:
+      - ./default_microservice/src:/etc/service/src
+      - ./default_microservice/artefacts_2:/etc/service/artefacts
+      - /home/max/development/pyservice/src/pyservice:/usr/local/lib/python3.11/site-packages/pyservice
+    environment:
+#      RABBITMQ_HOSTNAME: 'rabbit'
+#      RABBITMQ_PORT: '5672'
+#      RABBITMQ_VHOST: 'cluster-vhost'
+#      RABBITMQ_USERNAME: 'admin'
+#      RABBITMQ_PASSWORD: 'admin'
+      RABBITMQ_HOSTNAME: 'mb.cebb.pro'
+      RABBITMQ_PORT: '50001'
+      RABBITMQ_VHOST: 'vhost'
+      RABBITMQ_USERNAME: 'admin'
+      RABBITMQ_PASSWORD: 'rabbit-initial-password'
+
+  rabbit:
+    restart: no

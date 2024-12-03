@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 
 current_dir = Path(__file__).parent
-RANDOM_ENGLISH_WORDS =  current_dir / 'random_english_words.txt'
+RANDOM_ENGLISH_WORDS = current_dir / 'random_english_words.txt'
 
 
 def to_kebab(text: str) -> str:

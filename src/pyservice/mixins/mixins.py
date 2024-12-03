@@ -1,6 +1,6 @@
 """Useful class mixins."""
 
-from pyservice.text_tools import to_kebab
+from pyservice.text_tools.text_tools import to_kebab
 
 
 class KebabRefMixin:
@@ -24,10 +24,6 @@ class IdentityMixin:
     """Identity functionality."""
 
     @property
-    def _id(self):
-        raise NotImplementedError
-
-    @property
     def _hash_of_id(self):
         return hash(self._id)
 
@@ -38,9 +34,12 @@ class IdentityMixin:
         except AttributeError:
             return False
 
+    @property
+    def _id(self):
+        raise NotImplementedError
+
     # if not works - add next two methods to your model:
     def __hash__(self):
         return self._hash_of_id
-
     def __eq__(self, other):
         return self._eq_by_id(other)

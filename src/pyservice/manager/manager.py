@@ -193,7 +193,9 @@ class AppManager:
             as_text = now.strftime(dt_format)
             return as_text
 
-    def localed_dt(self, original: dt):
+    def localed_dt(self, original: dt | str):
+        if isinstance(original, str):
+            original = dt.fromisoformat(original)
         try:
             return original.astimezone(tz=self.timezone)
         except AttributeError:

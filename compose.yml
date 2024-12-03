@@ -6,25 +6,27 @@ services:
     image: rabbitmq:3.13.3-management
     restart: always
     ports:
-      - 15672:5672
+      - 11001:5672
     environment:
       RABBITMQ_DEFAULT_USER: 'test-rabbit-admin'
       RABBITMQ_DEFAULT_PASS: 'test-rabbit-password'
       RABBITMQ_DEFAULT_VHOST: 'test-vhost'
 
   seq:
+    # after first start do not forget to create an API key
     hostname: test-seq
     image: datalust/seq:2024.3
     restart: always
     ports:
-      - 15080:80
+      - 11002:80
     environment:
       ACCEPT_EULA: 'Y'
-      # password: <test-seq-password>
-      SEQ_FIRSTRUN_ADMINPASSWORDHASH: 'QKHvzdRbM2pNTv0S1XKkl+l5RHJyhsnqhhwwTX0xVQPwDrSSB6AYDoZtumL8ut90i3v6sqQE2gBkDWE3iAvkD2R3DHaiMmZY9vNKDmJTZbdE'
-      RABBITMQ_DEFAULT_VHOST: 'test-vhost'
+      # command for generating password`s hash:
+      # echo 'nimda' | docker run --rm -i datalust/seq config hash
+      # this password: nimda
+      SEQ_FIRSTRUN_ADMINPASSWORDHASH: 'QCrQSzUel6Cn6VJ9iWPcSjG6GBfNUOvdlAqVgN27TFy/v+uOSQCjRuM5zmjVFu4G9YUkrtd45tVwv8/HWmofyJMG74c8xXXgolwB75b1jc5q'
     volumes:
-      - test_seq:/data
+      - seq:/data
 
 volumes:
-  test_seq:
+  seq:

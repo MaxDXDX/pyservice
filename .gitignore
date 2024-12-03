@@ -1,9 +1,6 @@
-dist
-tests/artifacts
-tests/artefacts
+local-data
 artifacts*
 artefacts*
-build
 
 src/*
 !src/examples
@@ -11,3 +8,9 @@ src/*
 
 restart-celery.sh
 src/pyservice/pyconfig/.env*
+
+venv
+__pycache__
+.idea
+build
+dist
