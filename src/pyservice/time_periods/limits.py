@@ -275,6 +275,7 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
         rows.append(f'Имеется доступный остаток (да/нет): '
                     f'{is_positive_balance}')
         if indent:
+            # pylint: disable=W1405
             rows = [f'{" " * indent}{_}' for _ in rows]
         return '\n'.join(rows)
 
