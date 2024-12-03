@@ -210,6 +210,7 @@ class LimitsTestCase(TestCase):
 
     def test_get_state_of_limit(self):
         class FakeFetcher(limits.CountFetcher):
+            # pylint: disable=W0613
             def _get_count_for_period(self, period: periods.Period) -> int:
                 return 4
 
