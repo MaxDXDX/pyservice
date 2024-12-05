@@ -98,6 +98,13 @@ class SetOfCountPerCalendarPeriodLimits(base.BaseModel, base.IdentityMixin):
     """Group of limits."""
     items: set[CountPerCalendarPeriodLimit]
 
+    @property
+    def is_has_count_limit(self) -> bool:
+        for item in self.items:
+            if isinstance(item.limit, int) and item.limit > 0:
+                return True
+        return False
+
     def combined_period(self, moment: dt) -> periods.Period:
         stack = []
         for limit in self.items:
@@ -175,7 +182,7 @@ class CountPerCalendarPeriodLimits:
 class CountFetcher(abc.ABC):
     """Should return count for provided period."""
 
-    def get_count_for_period(self, period: periods.Period) -> int:
+    def get_count_for_period(self, period: periods.Period = None) -> int:
         return self._get_count_for_period(period)
 
     @abc.abstractmethod

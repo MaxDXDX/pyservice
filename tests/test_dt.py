@@ -208,6 +208,22 @@ class LimitsTestCase(TestCase):
         widest = set_of_limits.combined_period(now)
         self.assertIsInstance(widest, periods.Period)
 
+    def test_detect_if_set_of_limits_has_real_limits(self):
+        with_real_limits = limits.SetOfCountPerCalendarPeriodLimits(
+            items={
+                limits.CountPerCalendarPeriodLimits.DAY_10_CAL,
+                limits.CountPerCalendarPeriodLimits.MONTH_100_CAL,
+            }
+        )
+        self.assertTrue(with_real_limits.is_has_count_limit is True)
+        without_real_limits = limits.SetOfCountPerCalendarPeriodLimits(
+            items={
+                limits.CountPerCalendarPeriodLimits.UNLIMITED,
+                limits.CountPerCalendarPeriodLimits.DENIED,
+            }
+        )
+        self.assertTrue(without_real_limits.is_has_count_limit is False)
+
     def test_get_state_of_limit(self):
         class FakeFetcher(limits.CountFetcher):
             # pylint: disable=W0613

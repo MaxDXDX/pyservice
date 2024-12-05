@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Any
-
+import re
 import abc
 from datetime import datetime as dt
 from datetime import timedelta as td
@@ -82,6 +82,12 @@ class Period(base.BaseFrozenModel):
             start_ref = ref.replace('from-', '')
             start = dt_from_ref(start_ref)
             return Period(start=start)
+        if 'to-' in ref and 'from-' in ref:
+            start_ref = re.search('from-(.*?)-to-', ref).group(1)
+            end_ref = re.search('-to-(.*?)$', ref).group(1)
+            start = dt_from_ref(start_ref)
+            end = dt_from_ref(end_ref)
+            return Period(start=start, end=end)
         raise ValueError(f'invalid ref for Period: {ref}')
 
     @property
@@ -92,11 +98,15 @@ class Period(base.BaseFrozenModel):
     def is_past(self):
         return self.point_is_after_period(dt.now())
 
-    def point_is_before_period(self, point: dt):
+    def point_is_before_period(self, point: dt) -> bool:
         return self.start is not None and point < self.start
 
-    def point_is_after_period(self, point: dt):
+    def point_is_after_period(self, point: dt) -> bool:
         return self.end is not None and point > self.end
+
+    def point_is_in_period(self, point: dt) -> bool:
+        return (not self.point_is_before_period(point) and
+                not self.point_is_after_period(point))
 
     @property
     def is_infinity(self) -> bool:
@@ -134,6 +144,10 @@ class Period(base.BaseFrozenModel):
         start = self.start.strftime(dt_format)
         end = self.end.strftime(dt_format)
         return f'с {start} по {end}'
+
+    @property
+    def as_tuple(self) -> str:
+        return (self.start, self.end)
 
     def short_text(self):
         if not self.start and not self.end:
