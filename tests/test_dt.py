@@ -155,8 +155,11 @@ class DateAndTimeTestCase(TestCase):
             self.assertIsInstance(p.for_user_text().get('accusative'), str)
 
     def test_period_identity(self):
-        start = periods.get_moscow_dt('2021-02-01')
-        end = periods.get_moscow_dt('2021-02-28T23:59:59.999999')
+        start = dt.fromisoformat('2021-02-01')
+        end = dt.fromisoformat('2021-02-28 23:59:59.999999')
+        start = periods.get_localed_dt(start, tz=periods.MOSCOW_TIMEZONE)
+        end = periods.get_localed_dt(end, tz=periods.MOSCOW_TIMEZONE)
+        # end = periods.get_moscow_dt('2021-02-28T23:59:59.999999')
         print('start:', start)
         print('end:', end)
         p1 = periods.Period(start=start, end=end)
