@@ -38,8 +38,9 @@ class IdentityMixin:
     def _id(self):
         raise NotImplementedError
 
-    # if not works - add next two methods to your model:
     def __hash__(self):
         return self._hash_of_id
+
+    # if not works - add next to your model:
     def __eq__(self, other):
         return self._eq_by_id(other)

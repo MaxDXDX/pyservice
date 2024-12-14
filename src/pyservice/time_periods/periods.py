@@ -11,6 +11,7 @@ from datetime import timedelta as td
 import pytz
 
 from pyservice.domain import base
+from pyservice.mixins import IdentityMixin
 from pyservice.text_tools.russian_words import RussianWord, TimePeriods
 
 
@@ -49,15 +50,35 @@ def ref_for_dt(moment: dt) -> str:
     return moment.isoformat()
 
 
-def dt_from_ref(ref: str) -> dt:
-    return dt.fromisoformat(ref)
+def dt_from_ref(
+        ref: str,
+        tz,
+        force_end_of_implicit_dt=False,
+) -> dt:
+    is_no_time_provided = 'T' not in ref or ':' not in ref
+    naive = dt.fromisoformat(ref)
+    if tz:
+        localed = get_localed_dt(naive, tz)
+        if is_no_time_provided and force_end_of_implicit_dt:
+            localed = localed.replace(
+                hour=23, minute=59, second=59, microsecond=999999)
+        return localed
+    else:
+        raise ValueError('Time zone must be provided!')
 
 
-class Period(base.BaseFrozenModel):
+class Period(base.BaseModel, IdentityMixin):
     """Arbitrary time period."""
 
     start: dt | None = None
     end: dt | None = None
+
+    @property
+    def _id(self):
+        return self.start, self.end
+
+    def __eq__(self, other):
+        return self._eq_by_id(other)
 
     @property
     def ref(self) -> str:
@@ -71,22 +92,22 @@ class Period(base.BaseFrozenModel):
             return f'from-{ref_for_dt(self.start)}-to-{ref_for_dt(self.end)}'
 
     @classmethod
-    def build_from_ref(cls, ref: str) -> Period:
+    def build_from_ref(cls, ref: str, tz=None) -> Period:
         if ref == 'infinity':
             return Period()
         if 'to-' in ref and 'from-' not in ref:
             end_ref = ref.replace('to-', '')
-            end = dt_from_ref(end_ref)
+            end = dt_from_ref(end_ref, tz, force_end_of_implicit_dt=True)
             return Period(end=end)
         if 'to-' not in ref and 'from-' in ref:
             start_ref = ref.replace('from-', '')
-            start = dt_from_ref(start_ref)
+            start = dt_from_ref(start_ref, tz)
             return Period(start=start)
         if 'to-' in ref and 'from-' in ref:
             start_ref = re.search('from-(.*?)-to-', ref).group(1)
             end_ref = re.search('-to-(.*?)$', ref).group(1)
-            start = dt_from_ref(start_ref)
-            end = dt_from_ref(end_ref)
+            start = dt_from_ref(start_ref, tz)
+            end = dt_from_ref(end_ref, tz, force_end_of_implicit_dt=True)
             return Period(start=start, end=end)
         raise ValueError(f'invalid ref for Period: {ref}')
 
@@ -132,18 +153,29 @@ class Period(base.BaseFrozenModel):
     def get_infinity_period():
         return Period()
 
-    def as_plain_text(self, dt_format: str = '%d.%m.%y %H:%M:%S (%Z)'):
+    def as_plain_text(
+            self,
+            dt_format: str = '%d.%m.%y %H:%M:%S',
+            use_dash_if_closed: bool = True,
+    ):
+        tz_of_end_as_text = self.end.strftime('%Z') if self.end else None
+        tz_of_start_as_text = self.start.strftime('%Z') if self.start else None
         if not self.start and not self.end:
             return 'бессрочно'
         if not self.start:
-            end = self.end.strftime(dt_format)
+            end = f'{self.end.strftime(dt_format)} {tz_of_end_as_text}'
             return f'по {end}'
         if not self.end:
-            start = self.start.strftime(dt_format)
+            start = f'{self.start.strftime(dt_format)} {tz_of_start_as_text}'
             return f'с {start}'
         start = self.start.strftime(dt_format)
         end = self.end.strftime(dt_format)
-        return f'с {start} по {end}'
+        assert tz_of_end_as_text == tz_of_start_as_text
+        if use_dash_if_closed:
+            result = f'{start} - {end}'
+        else:
+            result = f'с {start} по {end}'
+        return f'{result} ({tz_of_start_as_text})'
 
     @property
     def as_tuple(self) -> str:

@@ -5,8 +5,12 @@ from typing import Any
 from unittest import TestCase
 from dataclasses import dataclass
 from datetime import datetime as dt
+from datetime import timedelta as td
+
+from prettytable import PrettyTable
 
 from pyservice.time_periods import periods, limits
+from pyservice.text_tools.russian_words import Unit, Units
 
 
 class DateAndTimeTestCase(TestCase):
@@ -150,6 +154,20 @@ class DateAndTimeTestCase(TestCase):
             self.assertIsInstance(p.for_user_text().get('nominative'), str)
             self.assertIsInstance(p.for_user_text().get('accusative'), str)
 
+    def test_period_identity(self):
+        start = periods.get_moscow_dt('2021-02-01')
+        end = periods.get_moscow_dt('2021-02-28T23:59:59.999999')
+        p1 = periods.Period(start=start, end=end)
+        p1_clone = periods.Period(start=start, end=end)
+        p2 = periods.Period(start=start.replace(second=2), end=end)
+        self.assertEqual(p1, p1_clone)
+        self.assertNotEqual(p2, p1)
+        # pylint: disable=C0301
+        as_calendarian = (periods.CalendarPeriodTypes.MONTH.get_calendarian_period_for_moment(
+            start + td(days=10)
+        ))
+        self.assertEqual(as_calendarian, p1_clone)
+
 
 class LimitsTestCase(TestCase):
     """Test for Count/Period limits."""
@@ -176,24 +194,28 @@ class LimitsTestCase(TestCase):
         self.assertNotEqual(limit, other)
         self.assertEqual(len({limit, other}), 2)
 
-    def test_build_from_ref(self):
+    def test_build_limit_from_ref(self):
         period_types = periods.CalendarPeriodTypes
 
         @dataclass
         class Case:
             ref: str
             limit: int
+            unit: Unit
             period_type: periods.CalendarPeriodType | None
             is_calendarian: bool | None
 
         cases = [
-            Case('10-day-cal', 10, period_types.DAY, True),
-            Case('100-month', 100, period_types.MONTH, False),
-            Case('unlimited', 0, None, None),
+            Case('10-day-cal', 10, Units.ITEM, period_types.DAY, True),
+            Case('10i-day-cal', 10, Units.ITEM, period_types.DAY, True),
+            Case('100-month', 100, Units.ITEM, period_types.MONTH, False),
+            Case('100r-month', 100, Units.REPORT, period_types.MONTH, False),
+            Case('unlimited', 0, Units.ITEM, None, None),
         ]
         for case in cases:
             lim = limits.CountPerCalendarPeriodLimit.build_from_ref(case.ref)
             self.assertEqual(lim.limit, case.limit)
+            self.assertEqual(lim.unit, case.unit)
             self.assertEqual(lim.period_type, case.period_type)
             self.assertEqual(lim.is_calendarian, case.is_calendarian)
 
@@ -215,14 +237,14 @@ class LimitsTestCase(TestCase):
                 limits.CountPerCalendarPeriodLimits.MONTH_100_CAL,
             }
         )
-        self.assertTrue(with_real_limits.is_has_count_limit is True)
+        self.assertTrue(with_real_limits.is_has_real_limit is True)
         without_real_limits = limits.SetOfCountPerCalendarPeriodLimits(
             items={
                 limits.CountPerCalendarPeriodLimits.UNLIMITED,
                 limits.CountPerCalendarPeriodLimits.DENIED,
             }
         )
-        self.assertTrue(without_real_limits.is_has_count_limit is False)
+        self.assertTrue(without_real_limits.is_has_real_limit is False)
 
     def test_get_state_of_limit(self):
         class FakeFetcher(limits.CountFetcher):
@@ -233,8 +255,9 @@ class LimitsTestCase(TestCase):
         @dataclass
         class Case:
             limit: limits.CountPerCalendarPeriodLimit
+            expected_spent: int | None
             expected_spent_percentage: int | None
-            expected_balance: int
+            expected_balance: int | None
             expected_balance_percentage: int | None
             expected_period: tuple[str, str] | None
             test_moment: str = '2024-11-29T20:36:20.123456+03:00'
@@ -243,15 +266,21 @@ class LimitsTestCase(TestCase):
 
         cases = [
             Case(
-                limits.CountPerCalendarPeriodLimits.DAY_10_CAL,
-                40, 6, 60,
-                ('2024-11-29T00:00:00+03:00',
-                 '2024-11-29T23:59:59.999999+03:00'),
+                limit=limits.CountPerCalendarPeriodLimits.DAY_10_CAL,
+                expected_spent=4,
+                expected_spent_percentage=40,
+                expected_balance=6,
+                expected_balance_percentage=60,
+                expected_period=('2024-11-29T00:00:00+03:00',
+                                 '2024-11-29T23:59:59.999999+03:00'),
             ),
             Case(
-                limits.CountPerCalendarPeriodLimits.UNLIMITED,
-                None, -1, None,
-                None,
+                limit=limits.CountPerCalendarPeriodLimits.UNLIMITED,
+                expected_spent=None,
+                expected_spent_percentage=None,
+                expected_balance=None,
+                expected_balance_percentage=None,
+                expected_period=None,
             ),
         ]
 
@@ -260,6 +289,7 @@ class LimitsTestCase(TestCase):
                 control_moment=periods.get_moscow_dt(case.test_moment),
                 spent_count=case.fetcher,
             )
+            self.assertEqual(state.spent, case.expected_spent)
             self.assertEqual(state.spent_as_percentage,
                              case.expected_spent_percentage)
             self.assertEqual(state.balance, case.expected_balance)
@@ -273,8 +303,9 @@ class LimitsTestCase(TestCase):
                                  case.expected_period[1])
             else:
                 self.assertEqual(state.reporting_period, case.expected_period)
-
-            print(state.as_plain_text())
+            self.assertIsInstance(state.as_plain_text(), str)
+            self.assertIsInstance(state.as_pretty_table(), PrettyTable)
+            self.assertIsInstance(state.serialized(), dict)
 
     def test_get_state_for_set_of_limits(self):
         set_of_limits = limits.SetOfCountPerCalendarPeriodLimits(
@@ -290,11 +321,31 @@ class LimitsTestCase(TestCase):
             spent_count=4,
         )
         self.assertTrue(good_state.is_some_limit_has_expired is False)
-        print(good_state.as_plain_text())
+        self.assertIsInstance(good_state.serialized(), dict)
+        # print(good_state.as_plain_text())
 
         bad_state = set_of_limits.get_state(
             control_moment=control_moment,
             spent_count=12,
         )
         self.assertTrue(bad_state.is_some_limit_has_expired is True)
-        print(bad_state.as_plain_text())
+        # print(bad_state.as_plain_text())
+        self.assertIsInstance(bad_state.serialized(), dict)
+        # print(bad_state.serialized())
+
+        # with count fetcher (ignored in serialization):
+        class FakeFetcher(limits.CountFetcher):
+            def _get_count_for_period(self, period: periods.Period) -> int:
+                return 4
+        fetcher = FakeFetcher()
+        state_by_fetcher = set_of_limits.get_state(
+            control_moment=control_moment,
+            spent_count=fetcher,
+        )
+        self.assertIsInstance(state_by_fetcher.serialized(), dict)
+        all_states = [good_state, bad_state, state_by_fetcher]
+        for _ in all_states:
+            table = _.as_pretty_table()
+            self.assertIsInstance(table, PrettyTable)
+
+

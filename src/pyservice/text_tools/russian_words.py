@@ -1,6 +1,7 @@
 """Russian words."""
 
-from pyservice.domain.base import BaseModel
+from __future__ import annotations
+from pyservice.domain.base import BaseFrozenModel
 
 
 class RussianCases:
@@ -17,7 +18,7 @@ class Numbers:
     plural: str = 'plural'
 
 
-class WordCases(BaseModel):
+class WordCases(BaseFrozenModel):
     """Russian cases for words.
 
     nominative - Именительный (кто, что)
@@ -39,7 +40,7 @@ class WordCases(BaseModel):
         return self.nominative
 
 
-class RussianWord(BaseModel):
+class RussianWord(BaseFrozenModel):
     singular: WordCases
     plural: WordCases
 
@@ -49,6 +50,12 @@ class RussianWord(BaseModel):
         cases: WordCases = getattr(self, number)
         case: str = getattr(cases, case)
         return case
+
+class Unit(RussianWord):
+    ref: str
+    short_ref: str
+    abbreviation: str = None
+    short_abbreviation: str = None
 
 
 class TimePeriods:
@@ -162,3 +169,83 @@ class TimePeriods:
             prepositional='годах',
         )
     )
+
+class Units:
+    """Some commonly used units."""
+
+    ITEM = Unit(
+        singular=WordCases(
+            nominative='штука',
+            genitive='штуки',
+            dative='штуке',
+            accusative='штуку',
+            instrumental='штукой',
+            prepositional='штуке',
+        ),
+        plural=WordCases(
+            nominative='штуки',
+            genitive='штук',
+            dative='штукам',
+            accusative='штуки',
+            instrumental='штуками',
+            prepositional='штуках',
+        ),
+        abbreviation='шт.',
+        ref='item',
+        short_ref='i',
+    )
+    CONVENTIONAL_UNIT = Unit(
+        singular=WordCases(
+            nominative='условная единица',
+            genitive='условной единицы',
+            dative='условной единице',
+            accusative='условную единицу',
+            instrumental='условной единицей',
+            prepositional='условной единице',
+        ),
+        plural=WordCases(
+            nominative='условные единицы',
+            genitive='условных единиц',
+            dative='условным единицам',
+            accusative='условные единицы',
+            instrumental='условными единицами',
+            prepositional='условных единицах',
+        ),
+        abbreviation='усл.ед.',
+        short_abbreviation='уе',
+        ref='cu',
+        short_ref='cu',
+    )
+    REPORT = Unit(
+        singular=WordCases(
+            nominative='отчёт',
+            genitive='отчёта',
+            dative='отчёту',
+            accusative='отчёт',
+            instrumental='отчётом',
+            prepositional='отчёте',
+        ),
+        plural=WordCases(
+            nominative='отчёты',
+            genitive='отчётов',
+            dative='отчётам',
+            accusative='отчёты',
+            instrumental='отчётами',
+            prepositional='отчётах',
+        ),
+        ref='report',
+        short_ref='r',
+        abbreviation='отч.',
+        short_abbreviation='отч.'
+    )
+    all = [
+        ITEM,
+        CONVENTIONAL_UNIT,
+        REPORT
+    ]
+
+    @classmethod
+    def build_from_ref(cls, ref: str) -> Unit:
+        for _ in cls.all:
+            if ref in (_.ref, _.short_ref):
+                return _

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import abc
+import re
 from datetime import datetime as dt
+from typing import Any
 
 import pydantic
+import prettytable as pt
 
 from pyservice.domain import base
+from pyservice.text_tools import russian_words
 from pyservice.time_periods import periods
 
 
@@ -17,6 +21,21 @@ class CountPerCalendarPeriodLimit(base.BaseFrozenModel):
     limit: int | None
     period_type: periods.CalendarPeriodType | None = None
     is_calendarian: bool | None = None
+    unit: russian_words.Unit = russian_words.Units.ITEM
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.limit is None:
+            assert self.period_type is None
+            assert self.is_calendarian is None
+        if self.limit == 0:
+            assert self.period_type is None
+            assert self.is_calendarian is None
+
+    @property
+    def is_real_limit(self) -> bool:
+        if isinstance(self.limit, int) and self.limit > 0:
+            return True
+        return False
 
     @property
     def is_unlimited(self) -> bool:
@@ -34,7 +53,7 @@ class CountPerCalendarPeriodLimit(base.BaseFrozenModel):
         elif self.is_disabled:
             return 'disabled'
         else:
-            main = f'{self.limit}-{self.period_type.ref}'
+            main = f'{self.limit}{self.unit.short_ref}-{self.period_type.ref}'
             if self.is_calendarian:
                 main = f'{main}-cal'
             return main
@@ -45,10 +64,17 @@ class CountPerCalendarPeriodLimit(base.BaseFrozenModel):
         if not period_type:
             return
         if self.is_calendarian:
-            current_period = period_type.get_current_calendarian_period()
-            return current_period
+            return period_type.get_calendarian_period_for_moment(moment)
         else:
             return period_type.get_period_from_provided_end(moment)
+
+    @property
+    def limit_value_as_human_text(self) -> str:
+        if self.is_unlimited:
+            return 'Без ограничений'
+        if self.is_disabled:
+            return 'Не доступно'
+        return str(self.limit)
 
     def as_plain_text(self) -> str:
         if self.is_unlimited:
@@ -84,14 +110,21 @@ class CountPerCalendarPeriodLimit(base.BaseFrozenModel):
         is_calendarian = '-cal' in ref
         ref = ref.replace('-cal', '')
         parts = ref.partition('-')
-        limit = int(parts[0])
+        limit_and_unit = parts[0]
+        lim = int(re.findall(r'\d+', limit_and_unit)[0])
+        unit_ref = limit_and_unit.replace(str(lim), '')
         period_type_ref = parts[2]
         period_type = periods.CalendarPeriodTypes.get_by_ref(period_type_ref)
-        return CountPerCalendarPeriodLimit(
-            limit=limit,
-            period_type=period_type,
-            is_calendarian=is_calendarian
-        )
+        args = {
+            'limit': lim,
+            'period_type': period_type,
+            'is_calendarian': is_calendarian
+        }
+        if unit_ref:
+            unit = russian_words.Units.build_from_ref(unit_ref)
+            assert unit
+            args['unit'] = unit
+        return CountPerCalendarPeriodLimit(**args)
 
 
 class SetOfCountPerCalendarPeriodLimits(base.BaseModel, base.IdentityMixin):
@@ -99,18 +132,33 @@ class SetOfCountPerCalendarPeriodLimits(base.BaseModel, base.IdentityMixin):
     items: set[CountPerCalendarPeriodLimit]
 
     @property
-    def is_has_count_limit(self) -> bool:
+    def size(self) -> int:
+        return len(self.items)
+
+    @property
+    def single_unit_for_all_limits(self) -> russian_words.Unit | None:
+        stack = set()
         for item in self.items:
-            if isinstance(item.limit, int) and item.limit > 0:
+            unit = item.unit
+            stack.add(unit)
+        if len(stack) == 1:
+            return list(stack)[0]
+
+    @property
+    def is_has_real_limit(self) -> bool:
+        for item in self.items:
+            if item.is_real_limit:
                 return True
         return False
 
-    def combined_period(self, moment: dt) -> periods.Period:
+    def combined_period(self, moment: dt) -> periods.Period | None:
         stack = []
         for limit in self.items:
             reporting_period = limit.get_reporting_period_for_moment(moment)
-            stack.append(reporting_period)
-        return periods.combine_periods(stack)
+            if reporting_period:
+                stack.append(reporting_period)
+        if stack:
+            return periods.combine_periods(stack)
 
     @classmethod
     def get_one_unlimited(cls) -> SetOfCountPerCalendarPeriodLimits:
@@ -195,7 +243,9 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
 
     object: CountPerCalendarPeriodLimit
     control_moment: dt
-    spent_count: CountFetcher | int | None = None
+    spent_count: CountFetcher | int | None = pydantic.Field(
+        default=None, exclude=True)
+
 
     @pydantic.computed_field
     @property
@@ -203,6 +253,8 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
         if isinstance(self.spent_count, int):
             return self.spent_count
         else:
+            if self.object.is_unlimited:
+                return
             period = self.reporting_period
             if not period:
                 return None
@@ -210,9 +262,9 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
 
     @pydantic.computed_field
     @property
-    def balance(self) -> int:
+    def balance(self) -> int | None:
         if self.object.limit == 0:  # unlimited
-            return -1
+            return None
         if self.object.limit is None:  # denied
             return 0
         else:
@@ -256,15 +308,6 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
 
     def as_plain_text(self, dt_format: str = '%d.%m.%y %H:%M:%S (%Z)',
                       indent: int = 0):
-        # if self.balance == 0:
-        #     balance_as_text = '0'
-        # # else self.balance > 0:
-        # else:
-        #     balance_as_text = str(self.balance)
-        # # elif self.balance == -1:
-        # #     balance_as_text = 'без ограничений'
-        # # else:
-        # #     balance_as_text = f'??{self.balance}'
         dt_as_text = self.control_moment.strftime(dt_format)
         rows = [f'Лимит: {self.object.as_plain_text()}']
         reporting_period = self.reporting_period
@@ -274,10 +317,11 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
         rows.append(f'Состояние на: {dt_as_text}')
         if self.spent:
             rows.append(f'Израсходовано: {self.spent}')
-        if self.balance >= 0:
-            rows.append(f'Доступно: {self.balance}')
-        else:
-            rows.append(f'Перерасход: {-1 * self.balance}')
+        if isinstance(self.balance, int):
+            if self.balance >= 0:
+                rows.append(f'Доступно: {self.balance}')
+            else:
+                rows.append(f'Перерасход: {-1 * self.balance}')
         is_positive_balance = 'да' if self.is_positive_balance else 'нет'
         rows.append(f'Имеется доступный остаток (да/нет): '
                     f'{is_positive_balance}')
@@ -286,10 +330,35 @@ class StateOfCountPerCalendarPeriodLimit(base.BaseModelWithArbitraryFields):
             rows = [f'{" " * indent}{_}' for _ in rows]
         return '\n'.join(rows)
 
+    def as_pretty_table(self) -> pt.PrettyTable:
+        table = pt.PrettyTable(
+            field_names=[
+                'Лимит',
+                'Единица измерения',
+                'Период',
+                'Отчётный период',
+                'Учтено',
+                'Остаток',
+            ]
+        )
+        row = []
+        row.append(self.object.limit_value_as_human_text)
+        if self.object.is_real_limit:
+            row.append(self.object.unit.singular.nominative)
+            row.append(
+                self.object.period_type.russian_title.singular.nominative)
+            row.append(self.reporting_period.as_plain_text())
+            row.append(f'{self.spent} ({self.spent_as_percentage}%)')
+            row.append(f'{self.balance} ({self.balance_as_percentage}%)')
+        else:
+            row.extend(['', '', '', '' , ''])
+        table.add_row(row)
+        return table
+
     @pydantic.computed_field
     @property
     def is_positive_balance(self) -> bool:
-        return self.balance == -1 or self.balance > 0
+        return self.object.is_unlimited or self.balance > 0
 
 
 class StateOfSetOfCountPerCalendarPeriodLimits(
@@ -298,7 +367,8 @@ class StateOfSetOfCountPerCalendarPeriodLimits(
 
     object: SetOfCountPerCalendarPeriodLimits
     control_moment: dt
-    spent_count: CountFetcher | int | None = None
+    spent_count: CountFetcher | int | None = pydantic.Field(
+        default=None, exclude=True)
 
     @pydantic.computed_field
     @property
@@ -322,3 +392,14 @@ class StateOfSetOfCountPerCalendarPeriodLimits(
         for _ in self.state_of_limits:
             rows.append(_.as_plain_text(dt_format, indent=2))
         return '\n'.join(rows)
+
+    def as_pretty_table(self) -> pt.PrettyTable:
+        all_states = self.state_of_limits
+        assert len(all_states) > 0
+        first_state = all_states[0]
+        table = first_state.as_pretty_table()
+        if len(all_states) > 1:
+            for _ in all_states[1:]:
+                t = _.as_pretty_table()
+                table.add_rows(t.rows)
+        return table
