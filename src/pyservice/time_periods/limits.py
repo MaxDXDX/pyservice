@@ -23,6 +23,7 @@ class CountPerCalendarPeriodLimit(base.BaseFrozenModel):
     is_calendarian: bool | None = None
     unit: russian_words.Unit = russian_words.Units.ITEM
 
+    # pylint: disable=C0103
     def model_post_init(self, __context: Any) -> None:
         if self.limit is None:
             assert self.period_type is None

@@ -166,6 +166,8 @@ class DateAndTimeTestCase(TestCase):
         as_calendarian = (periods.CalendarPeriodTypes.MONTH.get_calendarian_period_for_moment(
             start + td(days=10)
         ))
+        print('as-c', as_calendarian.start, as_calendarian.end)
+        print('p1c-c', p1_clone.start, p1_clone.end)
         self.assertEqual(as_calendarian, p1_clone)
 
 
