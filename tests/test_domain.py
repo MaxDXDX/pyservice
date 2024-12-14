@@ -27,6 +27,7 @@ class DomainModelsTestCase(TestCase):
             wheel_size: int
             brand_country: str
 
+            # pylint: disable=W0613
             def _serialized(self, context: Any = None) -> dict:
                 return self.as_dict(camel_case=True)
 

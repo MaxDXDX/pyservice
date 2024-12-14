@@ -157,6 +157,8 @@ class DateAndTimeTestCase(TestCase):
     def test_period_identity(self):
         start = periods.get_moscow_dt('2021-02-01')
         end = periods.get_moscow_dt('2021-02-28T23:59:59.999999')
+        print('start:', start)
+        print('end:', end)
         p1 = periods.Period(start=start, end=end)
         p1_clone = periods.Period(start=start, end=end)
         p2 = periods.Period(start=start.replace(second=2), end=end)
@@ -167,6 +169,7 @@ class DateAndTimeTestCase(TestCase):
             start + td(days=10)
         ))
         print('as-c', as_calendarian.start, as_calendarian.end)
+        print('p1', p1.start, p1.end)
         print('p1c-c', p1_clone.start, p1_clone.end)
         self.assertEqual(as_calendarian, p1_clone)
 
@@ -337,6 +340,7 @@ class LimitsTestCase(TestCase):
 
         # with count fetcher (ignored in serialization):
         class FakeFetcher(limits.CountFetcher):
+            # pylint: disable=W0613
             def _get_count_for_period(self, period: periods.Period) -> int:
                 return 4
         fetcher = FakeFetcher()
