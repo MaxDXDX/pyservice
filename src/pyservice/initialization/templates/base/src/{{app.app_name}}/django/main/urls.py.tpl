@@ -19,8 +19,11 @@ from django.urls import path, include
 
 from {{ app.app_name }} import manager
 
+from . import views as v
+
 
 base_patterns = [
+    path('admin/config/', v.ConfigView.as_view()),
     path('admin/', admin.site.urls),
 ]
 
