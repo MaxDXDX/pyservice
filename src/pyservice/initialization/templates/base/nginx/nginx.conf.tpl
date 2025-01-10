@@ -53,6 +53,7 @@ http {
         }
 
         location /{{ app.url_prefix }}/logs {
+            charset utf-8;
             autoindex on;
             alias /artefacts/logs;
         }

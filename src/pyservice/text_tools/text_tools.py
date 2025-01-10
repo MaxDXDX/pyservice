@@ -4,6 +4,8 @@ import string
 from re import sub
 import random
 from pathlib import Path
+from uuid import UUID
+
 
 current_dir = Path(__file__).parent
 RANDOM_ENGLISH_WORDS = current_dir / 'random_english_words.txt'
@@ -86,3 +88,13 @@ def shrunk_text(text: str, limit: int, with_comment: bool = True,
         # else:
         #     result = f'{showed}{slug}'
         #     return result
+
+
+def normalized_uuid(uuid: str | UUID) -> UUID:
+    if isinstance(uuid, str):
+        uuid = UUID(uuid)
+        return uuid
+    elif isinstance(uuid, UUID):
+        return uuid
+    else:
+        raise ValueError

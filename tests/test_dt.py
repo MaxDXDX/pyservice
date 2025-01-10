@@ -157,11 +157,6 @@ class DateAndTimeTestCase(TestCase):
     def test_period_identity(self):
         start = dt.fromisoformat('2021-02-01 00:00:00+03:00')
         end = dt.fromisoformat('2021-02-28 23:59:59.999999+03:00')
-        # start = periods.get_localed_dt(start, tz=periods.MOSCOW_TIMEZONE)
-        # end = periods.get_localed_dt(end, tz=periods.MOSCOW_TIMEZONE)
-        # end = periods.get_moscow_dt('2021-02-28T23:59:59.999999')
-        print('start:', start)
-        print('end:', end)
         p1 = periods.Period(start=start, end=end)
         p1_clone = periods.Period(start=start, end=end)
         p2 = periods.Period(start=start.replace(second=2), end=end)
@@ -171,9 +166,6 @@ class DateAndTimeTestCase(TestCase):
         as_calendarian = (periods.CalendarPeriodTypes.MONTH.get_calendarian_period_for_moment(
             start + td(days=10)
         ))
-        print('as-c', as_calendarian.start, as_calendarian.end)
-        print('p1', p1.start, p1.end)
-        print('p1c-c', p1_clone.start, p1_clone.end)
         self.assertEqual(as_calendarian, p1_clone)
 
 

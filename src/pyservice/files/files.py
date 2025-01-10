@@ -8,6 +8,8 @@ import pathlib
 from pathlib import Path
 import hashlib
 from typing import Any
+import os
+from datetime import datetime as dt
 
 import aiofiles
 import tarfile
@@ -280,6 +282,50 @@ def get_number_of_files_and_directories_in_directory(
 @normalize_path
 def get_number_of_files_in_directory(directory: Path) -> int:
     return len(get_list_of_files_in_directory(directory))
+
+
+
+
+@normalize_path
+def get_modification_dt_of_file(
+        fullpath: Path,
+) -> dt:
+    stat = os.stat(fullpath)
+    modificated_at_ts = stat.st_mtime
+    modificated_at = dt.fromtimestamp(modificated_at_ts)
+    print(modificated_at)
+    return modificated_at
+
+
+@normalize_path
+def delete_old_files_from_directory(
+        directory: Path,
+        count_limit: int = None,
+        dt_threshold: dt = None
+) -> list[Path]:
+    if not (count_limit or dt_threshold):
+        raise ValueError('Provide count limit or datetime threshold!')
+    all_files = get_list_of_files_in_directory(directory)
+    deleted = []
+    if dt_threshold:
+        # TODO: TEST!!!
+        for _ in all_files:
+            modificated_at = get_modification_dt_of_file(_)
+            if modificated_at < dt_threshold:
+                _.unlink()
+                deleted.append(_)
+
+    all_files = get_list_of_files_in_directory(directory)
+    if count_limit:
+        def sort_key(file: Path):
+            return get_modification_dt_of_file(file)
+        sorted_by_modification_dt = sorted(
+            all_files, key=sort_key, reverse=True)
+        to_delete = sorted_by_modification_dt[count_limit:]
+        for _ in to_delete:
+            _.unlink()
+            deleted.append(_)
+    return deleted
 
 
 @normalize_path

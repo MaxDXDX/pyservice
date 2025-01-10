@@ -1,7 +1,7 @@
 """
 Tests.
 """
-
+import time
 from unittest import TestCase
 from pathlib import Path
 
@@ -82,5 +82,43 @@ class FilesTestCase(TestCase):
         )
         md5_of_differ = files.md5(differ)
         self.assertNotEqual(md5_of_differ, 'ad60407c083b4ecc372614b8fcd9f305')
+
+    def test_remove_old_files(self):
+        self.mng.erase_tmp_directory()
+        tmp_dir = self.mng.directory_for_tmp
+        self.assertEqual(files.get_number_of_files_in_directory(tmp_dir), 0)
+        creating_order = [
+            3,
+            5,
+            1,
+            4,
+            2,
+        ]
+        number_of_files = len(creating_order)
+
+        created_files = []
+        for i in creating_order:
+            time.sleep(0.1)
+            f = self.mng.create_text_file_in_tmp_directory(
+                content=f'this is content of file #{i}',
+                filename=f'file-{i}.txt',
+            )
+            created_files.append(f)
+        sorted_by_dt = list(reversed(created_files))
+
+        self.assertEqual(
+            files.get_number_of_files_in_directory(tmp_dir), number_of_files)
+
+        with self.assertRaises(ValueError):
+            files.delete_old_files_from_directory(
+                directory=tmp_dir)
+        count_limit = 2
+        deleted_files = files.delete_old_files_from_directory(
+            directory=tmp_dir, count_limit=count_limit,
+        )
+        expected = sorted_by_dt[count_limit:]
+        self.assertEqual(len(deleted_files), number_of_files - count_limit)
+        self.assertListEqual(expected, deleted_files)
+
 
 
