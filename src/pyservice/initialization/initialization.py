@@ -121,6 +121,17 @@ def init_new_service(app_dir: Path):
         print(e.stdout)
         print('try to run manually:\npython -m pip install -e .')
 
+    print('all dependencies have been installed\n')
+    print(
+        f'now manually run db and seq docker containers:\n'
+        f'- docker compose up db seq -d\n'
+        f'Then make initial migrations:\n'
+        f'- python src/{init_data.app_name}/django/manage.py makemigrations\n'
+        f'Then build all images:\n'
+        f'- docker compose build\n'
+        f'And run all containers:\n'
+        f'- docker compose up\n'
+    )
 
-    # init_data.create_files_and_directories()
+
 

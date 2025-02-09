@@ -1,1 +1,2 @@
 include src/pyservice/text_tools/*.txt
+recursive-include src/pyservice/initialization/templates *

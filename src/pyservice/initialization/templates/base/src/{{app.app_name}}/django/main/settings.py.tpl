@@ -44,7 +44,7 @@ REST_FRAMEWORK = {
        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'myapp.django.auth.keycloak_auth.KeycloakAuth',
+        '{{ app.app_name }}.django.auth.keycloak_auth.KeycloakAuth',
     ],
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',

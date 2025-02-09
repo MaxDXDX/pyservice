@@ -19,27 +19,28 @@ servers:
     description: LOCAL
 
 # tags:
-#   - name: Assistants
-#     description: Sources of system
+#   - name: Some tag
+#     description: Description of tag
 
 paths:
   /account/:
     get:
       tags:
         - Assistants
-      summary: Get account data
+      summary: Get account data (as example)
+      responses:
+        '200':
+          description: Account info
+          content:
+            application/json:
+              example:
+                id: "65a2ef19-bc5a-4433-9e50-ec332b861ea5"
+                username: "ivan"
+                last_name: "Ivanov"
+                first_name: "Ivan"
 
 components:
   schemas:
-
-#  securitySchemes:
-#    Keycloak:
-#      type: oauth2
-#      name: Phoenix
-#      description: Сервер авторизации **Феникс**
-#      flows:
-#        implicit:
-#          authorizationUrl: https://auth.cebb.pro/auth/realms/phoenix-production-1/protocol/openid-connect/auth
 
   securitySchemes:
     Keycloak:
@@ -50,6 +51,3 @@ components:
           tokenUrl: https://auth.cebb.pro/auth/realms/phoenix-production-1/protocol/openid-connect/token
           refreshUrl: https://auth.cebb.pro/auth/realms/phoenix-production-1//protocol/openid-connect/token
       x-usePkceWithAuthorizationCodeGrant: true  # Enables PKCE in Swagger UI
-#          scopes:
-#            read: Read access to protected resources
-#            write: Write access to protected resources

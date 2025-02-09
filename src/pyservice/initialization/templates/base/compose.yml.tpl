@@ -3,7 +3,7 @@ services:
     restart: 'always'
     hostname: {{ app.app_name }}-app
     ports:
-      - {{ app.docker_django_port }}:8000'
+      - '{{ app.docker_django_port }}:8000'
     environment:
       instance_tag: 'in-docker'
       django_db_hostname: {{ app.app_name }}-db
@@ -44,7 +44,7 @@ services:
 
   swagger:
     restart: 'always'
-    hostname: myapp-swagger
+    hostname: {{ app.app_name }}-swagger
     ports:
       - '{{ app.docker_swagger_port }}:8080'
     build:
