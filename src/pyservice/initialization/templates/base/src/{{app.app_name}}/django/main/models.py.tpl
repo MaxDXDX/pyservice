@@ -7,5 +7,5 @@ from .model_base import BaseDjangoModel
 log = manager.get_logger_for_pyfile(__file__)
 
 
-# class MyModel(BaseDjangoModel):
+# class Account(BaseDjangoModelForDomain):
 #     some_field = models.TextField(null=True, blank=True)

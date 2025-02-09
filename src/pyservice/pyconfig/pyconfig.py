@@ -117,6 +117,10 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
 
     is_keycloak_auth_enabled: bool = True
     keycloak_url: HttpUrl = 'http://keycloak:8080/auth'
+    keycloak_realm: str = 'local-development'
+    keycloak_client_id: str = ''
+    keycloak_secret_key: str = ''
+
 
 
 default_app_config = AppConfig(

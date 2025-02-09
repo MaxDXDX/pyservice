@@ -293,7 +293,6 @@ def get_modification_dt_of_file(
     stat = os.stat(fullpath)
     modificated_at_ts = stat.st_mtime
     modificated_at = dt.fromtimestamp(modificated_at_ts)
-    print(modificated_at)
     return modificated_at
 
 

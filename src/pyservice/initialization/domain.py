@@ -88,11 +88,14 @@ class InitializationData(base.BaseModel):
     app_dir: Path = None
 
     docker_django_port: str
-    docker_db_port: str
     docker_db_version: str = '17.0'
-    rabbit_local_port: str
-    seq_local_port: str
     docker_nginx_version: str = '1.22.0'
+
+    docker_db_port: str
+    docker_nginx_port: str
+    docker_swagger_port: str
+    docker_rabbit_port: str
+    docker_seq_port: str
 
     url_prefix: str = 'prefix'
 

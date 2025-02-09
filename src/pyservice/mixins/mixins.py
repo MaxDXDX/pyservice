@@ -1,5 +1,7 @@
 """Useful class mixins."""
 
+import typing as t
+
 from pyservice.text_tools.text_tools import to_kebab
 
 
@@ -44,3 +46,35 @@ class IdentityMixin:
     # if not works - add next to your model:
     def __eq__(self, other):
         return self._eq_by_id(other)
+
+
+class SequenceMixin:
+    """Make a class suitable for storing list or set of items."""
+
+    items: list | set
+
+    @property
+    def size(self) -> int:
+        if not self.items:
+            return 0
+        return len(self.items)
+
+    @property
+    def is_empty(self) -> int:
+        return self.size == 0
+
+    def intersection_with_another(self, another: t.Any) -> t.Self:
+        if not isinstance(self, type(another)):
+            raise ValueError(
+                'both sequences must be of the same type to get intersection')
+        common_items = set()
+        for item in another.items:
+            if item in self.items:
+                common_items.add(item)
+        if isinstance(self.items, list):
+            return type(self)(items=list(common_items))
+        elif isinstance(self.items, set):
+            return type(self)(items=common_items)
+
+    def has_intersection_with_another(self, another: t.Any) -> bool:
+        return self.intersection_with_another(another).size > 0

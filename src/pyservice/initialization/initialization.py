@@ -34,17 +34,23 @@ def gather_init_data_for_app() -> InitializationData:
             'version of nginx: ',
             type=str, default='1.24.0')
         docker_django_port = click.prompt(
-            'external port for app`s container: ',
+            'external port for local app`s container: ',
             type=str, default='12001')
         docker_db_port = click.prompt(
-            'external port for db`s container: ',
-            type=str, default='12002')
-        rabbit_local_port = click.prompt(
-            'external port for RabbitMQ`s local container: ',
-            type=str, default='12003')
-        seq_local_port = click.prompt(
-            'external port for seq`s local container: ',
-            type=str, default='12004')
+            'external port for local db`s container: ',
+            type=str, default=str(int(docker_django_port) + 1))
+        docker_nginx_port = click.prompt(
+            'external port for local nginx`s container: ',
+            type=str, default=str(int(docker_django_port) + 2))
+        docker_swagger_port = click.prompt(
+            'external port for local swagger`s container: ',
+            type=str, default=str(int(docker_django_port) + 3))
+        docker_rabbit_port = click.prompt(
+            'external port for local rabbit`s container: ',
+            type=str, default=str(int(docker_django_port) + 4))
+        docker_seq_port = click.prompt(
+            'external port for local seq`s container: ',
+            type=str, default=str(int(docker_django_port) + 5))
         url_prefix = click.prompt(
             'url prefix for all app`s url paths: ',
             type=str, default=text_tools.to_kebab(app_name))
@@ -55,8 +61,10 @@ def gather_init_data_for_app() -> InitializationData:
             is_django_powered=is_django_powered,
             docker_django_port=docker_django_port,
             docker_db_port=docker_db_port,
-            seq_local_port=seq_local_port,
-            rabbit_local_port=rabbit_local_port,
+            docker_nginx_port=docker_nginx_port,
+            docker_swagger_port=docker_swagger_port,
+            docker_rabbit_port=docker_rabbit_port,
+            docker_seq_port=docker_seq_port,
             docker_nginx_version=docker_nginx_version,
             docker_db_version=docker_db_version,
             url_prefix=url_prefix,
@@ -80,7 +88,6 @@ def build_scaffold(app_init_data: InitializationData):
     all_templates = []
 
     for i in tpl_env.list_templates():
-        print(i)
         if '.tpl' in str(i):
             jinja_template = tpl_env.get_template(i)
             t = d.FileTemplate(
@@ -103,8 +110,17 @@ def init_new_service(app_dir: Path):
     build_scaffold(init_data)
 
     print('project structure has been created, installing dependencies ...')
-    subprocess.check_call(
-        [sys.executable, '-m', 'pip', 'install', '-e', '.'])
+    try:
+        subprocess.check_call(
+            [sys.executable, '-m', 'pip', 'install', '-e', '.'])
+    except subprocess.CalledProcessError as e:
+        print('Error during install app as package:')
+        print(e.returncode)
+        print(e.stderr)
+        print(e.output)
+        print(e.stdout)
+        print('try to run manually:\npython -m pip install -e .')
+
 
     # init_data.create_files_and_directories()
 

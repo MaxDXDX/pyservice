@@ -13,6 +13,8 @@ import pkg_resources
 import celery.exceptions
 from celery import Celery
 from celery.result import AsyncResult
+from celery.utils.log import get_task_logger
+
 from pytz import timezone
 import pika
 
@@ -309,7 +311,16 @@ class MicroServiceManager(AppManager):
         self.init_celery_app()
         self.post_microservice_manager_init()
 
-
+    def get_logger_for_celery_tasks(self) -> logging.Logger:
+        log = get_task_logger('celery_tasks')
+        formatter = logging.Formatter(
+            '%(asctime)s %(name)-20s - %(levelname)-5s - %(message)s'
+        )
+        fh = logging.FileHandler(self.directory_for_logs / 'celery_tasks.log')
+        fh.setFormatter(formatter)
+        log.addHandler(fh)
+        log.info('Logger for celery tasks: %s', log)
+        return log
 
     def _async_self_checks_by_celery(self) -> list:
         async_checks = [
@@ -463,9 +474,15 @@ class MicroServiceManager(AppManager):
     async def preflight_checks(self):
         self.log.info('performing preflight checks for microservice %s',
                       self.microservice.ref)
+        print('waiting for seq ... ', end=None)
         await self.check_connection_to_seq()
+        print('OK')
+        print('waiting for telegram server ...', end=None)
         await self.check_connection_to_telegram_server()
+        print('OK')
+        print('waiting for rabbit mq ...', end=None)
         await self.check_connection_to_rabbit_mq()
+        print('OK')
         self.test_rabbit_by_pika()
 
         self.send_message_to_telegram_chat(
@@ -869,7 +886,6 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
 
     @property
     def wsgi_app(self) -> str:
-        'ma.django.tgbotapi.wsgi:application'
         return f'{self.django_main_app_module}.wsgi:application'
 
     @property
@@ -923,6 +939,10 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
         return base
 
     async def preflight_checks(self):
+        if not self.config.keycloak_secret_key:
+            raise ValueError('KEYCLOAK_SECRET_KEY must be provided!!!!')
+        if not self.config.keycloak_client_id:
+            raise ValueError('KEYCLOAK_CLIENT_ID must be provided!!!!')
         await super().preflight_checks()
         assert self.django_directory.is_dir()
         await self.check_connection_to_db()
@@ -975,9 +995,6 @@ class DjangoBasedMicroserviceManager(MicroServiceManager):
                        self.is_django_test_mode)
         self.log.debug('- database settings: %s',
                        self.django_db_settings)
-
-
-default_app_manager = AppManager(default_app_config, __file__)
 
 
 def get_default_app_manager():

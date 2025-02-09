@@ -44,6 +44,10 @@ class SerializationMixin:
     def _serialized(self, context: Any = None) -> dict | list:
         return self.as_dict()
 
+    @classmethod
+    def build_from_serialized(cls, serialized) -> Any:
+        return cls(**serialized)
+
 
 class BaseModel(PydanticBaseModel, SerializationMixin):
     model_config = ConfigDict(
@@ -76,3 +80,5 @@ class BaseEntity(PydanticBaseModel, SerializationMixin, IdentityMixin):
 
 class BaseSettings(PydanticBaseSettings, SerializationMixin):
     pass
+
+

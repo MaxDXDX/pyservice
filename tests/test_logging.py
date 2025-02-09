@@ -3,11 +3,12 @@ Tests.
 """
 
 from unittest import TestCase
+
+from build.lib.pyservice.manager.manager import get_default_app_manager
 from pyservice import log_tools
-from pyservice.manager.manager import default_app_manager
 from pyservice.manager.manager import get_default_microservice_manager
 
-log = default_app_manager.get_logger_for_pyfile(__file__)
+log = get_default_app_manager().get_logger_for_pyfile(__file__)
 ms_log = get_default_microservice_manager().get_logger_for_pyfile(__file__)
 
 

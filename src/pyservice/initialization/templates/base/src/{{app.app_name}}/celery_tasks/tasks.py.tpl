@@ -1,21 +1,8 @@
-import logging
-from logging import Formatter, FileHandler
-
-from celery.utils.log import get_task_logger
 from celery.schedules import crontab
 
-from {{ app.app_name }} import manager, config
+from .. import manager
 
-
-log = get_task_logger('celery_tasks')
-formatter = Formatter(
-    '%(asctime)s %(name)-20s - %(levelname)-5s - %(message)s'
-)
-fh = logging.FileHandler(manager.directory_for_logs / 'celery_tasks.log')
-fh.setFormatter(formatter)
-log.addHandler(fh)
-
-log.info('Logger for celery tasks: %s', log)
+log = manager.get_logger_for_celery_tasks()
 
 ## You might add periodic tasks here:
 # manager.add_task_to_celery_scheduler(
@@ -36,4 +23,3 @@ def on_celery_start():
 # @manager.celery_app.task
 # def my_task():
 #     your logic
-

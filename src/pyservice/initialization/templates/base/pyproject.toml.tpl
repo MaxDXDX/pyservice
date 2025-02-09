@@ -18,7 +18,8 @@ dependencies = [
   # django level
   "django==5.1.3",
   "gunicorn==20.1.0",
-  "psycopg2-binary==2.9.9",
-  "psycopg==3.1.8",
+  "psycopg2-binary==2.9.10",
+  "psycopg==3.2.3",
   "django-cors-headers==4.4.0",
+  "python-keycloak==5.3.1"
 ]

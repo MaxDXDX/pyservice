@@ -5,7 +5,7 @@ INSTANCE_TAG='local-development'  # example
 
 ## used RabbitMQ
 RABBITMQ_HOSTNAME='localhost'
-RABBITMQ_PORT='5672'
+RABBITMQ_PORT='{{ app.docker_seq_port }}'
 RABBITMQ_USERNAME='rabbit-admin'
 RABBITMQ_PASSWORD='rabbit-password'
 RABBITMQ_VHOST='cluster-vhost'

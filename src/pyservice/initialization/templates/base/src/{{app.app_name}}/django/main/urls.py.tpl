@@ -20,11 +20,14 @@ from django.urls import path, include
 from {{ app.app_name }} import manager
 
 from . import views as v
+from .rest import urls as rest_patterns
 
 
 base_patterns = [
     path('admin/config/', v.ConfigView.as_view()),
     path('admin/', admin.site.urls),
+
+    path('api/v1/', include(rest_patterns.rest_api_patterns))
 ]
 
 if manager.config.url_prefix:
