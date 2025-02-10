@@ -4,6 +4,8 @@
 services:
   app:
     restart: 'always'
+    ports:
+      - '{{ app.docker_django_port }}:8000'
     environment:
       RABBITMQ_HOSTNAME: {{ app.app_name }}-rabbit
       RABBITMQ_PORT: '5672'
@@ -13,9 +15,17 @@ services:
       - ./tests:/etc/service/tests
       - ./artefacts:/etc/service/artefacts
 
-#  db:
+  db:
+    ports:
+      - '{{ app.docker_db_port }}:5432'
 
-#  nginx:
+  nginx:
+    ports:
+      - '{{ app.docker_nginx_port }}:80'
+
+  swagger:
+    ports:
+      - '{{ app.docker_swagger_port }}:8080'
 
   # local rabbit (comment if you use an external one)
   rabbit:

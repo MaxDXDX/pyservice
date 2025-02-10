@@ -2,8 +2,6 @@ services:
   app:
     restart: 'always'
     hostname: {{ app.app_name }}-app
-    ports:
-      - '{{ app.docker_django_port }}:8000'
     environment:
       instance_tag: 'in-docker'
       django_db_hostname: {{ app.app_name }}-db
@@ -22,8 +20,6 @@ services:
   db:
     restart: 'always'
     hostname: {{ app.app_name }}-db
-    ports:
-      - '{{ app.docker_db_port }}:5432'
     image: postgres:{{ app.docker_db_version }}
     environment:
       POSTGRES_USER: pgdb_superuser
@@ -35,8 +31,6 @@ services:
   nginx:
     restart: 'always'
     hostname: {{ app.app_name }}-nginx
-    ports:
-      - '{{ app.docker_nginx_port }}:80'
     build:
       context: ./nginx
     volumes:
@@ -45,8 +39,6 @@ services:
   swagger:
     restart: 'always'
     hostname: {{ app.app_name }}-swagger
-    ports:
-      - '{{ app.docker_swagger_port }}:8080'
     build:
       context: ./swagger
 
