@@ -20,7 +20,7 @@ SEQ_API_KEY='nimda'
 
 KEYCLOAK_URL='https://auth.cebb.pro/auth'
 KEYCLOAK_REALM='phoenix-production-1'
-KEYCLOAK_CLIENT_ID='meta-aggregator-backend'
-KEYCLOAK_SECRET_KEY='jkhpMRaqmz0qTzvRR0kCBkxjl1S0ocVk'
+KEYCLOAK_CLIENT_ID='default-protected-client'
+KEYCLOAK_SECRET_KEY='gLhLyIM16Vt4mZ7Gbbk3haP3tQnZE0xO'
 
 DJANGO_CORS_ALLOWED_ORIGINS='["http://localhost:{{ app.docker_swagger_port }}"]'
