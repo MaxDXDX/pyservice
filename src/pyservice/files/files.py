@@ -408,7 +408,7 @@ def save_text(content: str, full_path):
         f.write(content)
 
 
-def md5(fullpath: Path):
+def md5(fullpath: Path) -> str:
     with open(fullpath, 'rb') as f:
         file_hash = hashlib.md5()
         while chunk := f.read(8192):

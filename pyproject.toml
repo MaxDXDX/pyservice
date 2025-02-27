@@ -30,7 +30,5 @@ dependencies = [
     "djangorestframework==3.15.2",
     "python-keycloak==5.3.1",
 
-
-
     "tgs-client @ git+https://pack:F6VxZN5xuHrd5fsdK9_V@git.cebb.pro/ias-phoenix-native/submodules/telegram-service-client.git@_package",
 ]

@@ -165,6 +165,8 @@ class AppManager:
     @property
     @create_if_not_yet
     def artefacts_directory(self) -> Path:
+        if self.test_mode:
+            return self.directory_for_app / 'artefacts-tests'
         return self.directory_for_app / 'artefacts'
 
     @property
