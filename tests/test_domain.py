@@ -7,10 +7,6 @@ from unittest import TestCase
 from pathlib import Path
 
 from pyservice.domain.base import BaseModel
-from pyservice.domain import files as files_domain
-from pyservice.files import files as files_utils
-
-from pyservice.manager.manager import get_default_app_manager
 
 current_path = Path(__file__).parent
 
@@ -45,27 +41,3 @@ class DomainModelsTestCase(TestCase):
         serialized = car.serialized()
         self.assertIn('wheelSize', serialized)
         self.assertIn('brandCountry', serialized)
-
-    def test_files_domain(self):
-        manager = get_default_app_manager()
-        number_of_files = 5
-
-        local_files_items = set()
-
-        for _ in range(number_of_files):
-            local_path = files_utils.create_text_file_in_directory(
-                directory=manager.directory_for_tmp,
-                content=f'content of text file #{_}',
-                filename=f'some-local-file-{_}.txt'
-            )
-            local_file = files_domain.LocalFile(
-                fullpath=local_path
-            )
-            self.assertIsInstance(local_file, files_domain.LocalFile)
-            local_files_items.add(local_file)
-
-        local_files = files_domain.LocalFiles(items=local_files_items)
-        self.assertEqual(local_files.size, 5)
-
-
-

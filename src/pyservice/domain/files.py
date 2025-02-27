@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from uuid import uuid4
+import shutil
 
 from pyservice.mixins.mixins import SequenceMixin
 from pyservice.files import files as files_tools
@@ -56,10 +57,12 @@ class LocalFile(base.BaseEntity):
                 new_fullpath.unlink(missing_ok=True)
             else:
                 raise FileExistsError(f'File <{new_fullpath}> already exists')
-        self.fullpath.rename(
-            target=new_fullpath
-        )
+        shutil.move(str(self.fullpath), str(new_fullpath))
         self.fullpath = new_fullpath
+
+    @property
+    def is_exist(self) -> bool:
+        return self.fullpath.is_file()
 
     class Examples:
         """Generators for building examples. Usefully for tests."""
