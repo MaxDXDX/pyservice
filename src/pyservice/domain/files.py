@@ -101,6 +101,11 @@ class LocalFiles(base.BaseEntity, SequenceMixin):
         return cls(items=items)
 
 
+    @classmethod
+    def build_empty(cls) -> LocalFiles:
+        return cls(items=set())
+
+
     def move_all_files_to_directory(
             self,
             new_directory: Path,
