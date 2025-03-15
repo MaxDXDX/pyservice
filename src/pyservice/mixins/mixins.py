@@ -60,7 +60,7 @@ class SequenceMixin:
         return len(self.items)
 
     @property
-    def is_empty(self) -> int:
+    def is_empty(self) -> bool:
         return self.size == 0
 
     def intersection_with_another(self, another: t.Any) -> t.Self:
