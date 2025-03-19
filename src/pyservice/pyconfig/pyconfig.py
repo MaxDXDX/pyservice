@@ -97,6 +97,12 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
         'http://localhost:5173',
     ]
 
+    django_cors_extra_exposed_headers: list[str] = [
+        'date',
+    ]
+
+    django_cors_extra_allowed_headers: list[str] = []
+
     django_allowed_hosts: list[str] = [
         '127.0.0.1',
         'localhost',

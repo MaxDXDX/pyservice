@@ -40,6 +40,9 @@ class SerializationMixin:
     def serialized(self, context: Any = None) -> dict | list:
         return self._serialized(context)
 
+    def serialize(self, context: Any = None) -> dict | list:
+        return self.model_dump(mode='json', context=context)
+
     # pylint: disable=W0613
     def _serialized(self, context: Any = None) -> dict | list:
         return self.as_dict()
@@ -50,9 +53,28 @@ class SerializationMixin:
 
 
 class BaseModel(PydanticBaseModel, SerializationMixin):
+    """Base model for Domain models."""
+
     model_config = ConfigDict(
         alias_generator=camel_case_alias_generator
     )
+
+    def model_dump(self, *args, **kwargs) -> dict[str, Any]:
+        context = kwargs.get('context')
+        if context:
+            try:
+                is_for_frontend = context.is_for_frontend
+            except AttributeError:
+                is_for_frontend = False
+            kwargs['by_alias'] = is_for_frontend
+        return super().model_dump(*args, **kwargs)
+
+    # @field_serializer('*', mode='wrap')
+    # def context_propagation(
+    #         self, v: t.Any, nxt: SerializerFunctionWrapHandler, info):
+    #     if isinstance(v, pydantic.BaseModel):
+    #         return v.model_dump(context=info.context)
+    #     return nxt(v)
 
 
 class BaseFrozenModel(PydanticBaseModel, SerializationMixin):

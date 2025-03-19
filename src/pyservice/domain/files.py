@@ -27,6 +27,11 @@ class LocalFile(base.BaseEntity):
     def md5(self) -> str:
         return files_tools.md5(self.fullpath)
 
+    @property
+    def last_extension(self) -> str:
+        extension = self.fullpath.suffix.replace('.', '')
+        return extension
+
     def binary_content(self):
         with open(self.fullpath, 'rb') as f:
             file_content = f.read()

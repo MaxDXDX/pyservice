@@ -1,5 +1,6 @@
 """Text tools."""
 
+import typing as t
 import string
 from re import sub
 import random
@@ -98,3 +99,24 @@ def normalized_uuid(uuid: str | UUID) -> UUID:
         return uuid
     else:
         raise ValueError
+
+
+def get_all_keys(
+        data: t.Dict[str, t.Any],
+        parent_key: str = ''
+) -> t.List[str]:
+    keys = []
+
+    for key, value in data.items():
+        full_key = f'{parent_key}.{key}' if parent_key else key
+        keys.append(full_key)
+
+        if isinstance(value, dict):  # Recursively process nested dictionaries
+            keys.extend(get_all_keys(value, full_key))
+        elif isinstance(
+            value, list):  # If value is a list, check for nested dictionaries
+            for i, item in enumerate(value):
+                if isinstance(item, dict):
+                    keys.extend(get_all_keys(item, f'{full_key}[{i}]'))
+
+    return keys
