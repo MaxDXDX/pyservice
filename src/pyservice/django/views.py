@@ -3,7 +3,10 @@
 
 from logging import Logger
 from datetime import datetime as dt
+import pathlib
 
+from django.core.files import uploadedfile
+from django.core.files import storage
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -80,3 +83,55 @@ class RestViewBaseAbstract(APIView):
     def dispatch(self, request: Request, *args, **kwargs):
         result = super().dispatch(request, *args, **kwargs)
         return result
+
+
+    def save_incoming_files_to_tmp_dir(
+            self,
+            # pylint:disable=line-too-long
+            files_from_request: list[uploadedfile.InMemoryUploadedFile | uploadedfile.TemporaryUploadedFile]
+    ) -> list[pathlib.Path]:
+        stack = []
+        for _ in files_from_request:
+            saved = self.save_incoming_file_to_tmp_dir(_)
+            stack.append(saved)
+        return stack
+
+    def save_incoming_file_to_tmp_dir(
+            self,
+            # pylint:disable=line-too-long
+            file_from_request: uploadedfile.InMemoryUploadedFile | uploadedfile.TemporaryUploadedFile
+    ) -> pathlib.Path:
+        now_point_without_dot = str(dt.now().timestamp()).replace('.', '')
+        target_dir = self.app_manager.directory_for_tmp
+        original_filename = file_from_request.name
+        unique_filename = f'{now_point_without_dot}-{original_filename}'
+        self.log.debug(
+            'saving uploaded file %s into drive directory %s '
+            'with new filename %s',
+            original_filename, target_dir, unique_filename)
+        target_fullpath = target_dir / unique_filename
+
+        self.log.debug(
+            'saving file from request to temporary directory:\n'
+            '- file from request: %s\n'
+            '- generated unique filename: %s\n'
+            '- target full path: %s\n',
+            file_from_request, unique_filename, target_fullpath
+        )
+
+        is_file_with_same_filename_exists = target_fullpath.is_file()
+        if is_file_with_same_filename_exists:
+            self.log.critical('ERROR during saving file from request - '
+                         'file with same name is already exists: %s',
+                         target_fullpath
+                         )
+            raise RuntimeError(
+                f'File {target_fullpath} is already exists!')
+        storage.FileSystemStorage(location=target_fullpath.parent).save(
+            target_fullpath.name, file_from_request)
+        if not target_fullpath.is_file():
+            raise RuntimeError('ERROR during saving file from request '
+                               'to temporary file')
+        self.log.debug('File has been saved to: %s', target_fullpath)
+        return target_fullpath
+

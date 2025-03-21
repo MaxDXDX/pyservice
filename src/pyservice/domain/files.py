@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import typing as t
 from pathlib import Path
 from uuid import uuid4
 import shutil
+import re
 
 from pyservice.mixins.mixins import SequenceMixin
 from pyservice.files import files as files_tools
@@ -125,3 +127,28 @@ class LocalFiles(base.BaseEntity, SequenceMixin):
     @property
     def filenames(self) -> list[str]:
         return [_.fullpath.name for _ in self.items]
+
+    def get_by_regex(
+        self,
+        pattern: t.Union[str, re.Pattern]
+    ) -> t.Union[None, LocalFile, list[LocalFile]]:
+        """
+        Returns files whose filenames match the given regex pattern.
+
+        Args:
+            pattern (str | re.Pattern): The regex to match filenames against.
+
+        Returns:
+            None: if no files matched
+            LocalFile: if exactly one file matched
+            list[LocalFile]: if more than one file matched
+        """
+        regex = re.compile(pattern) if isinstance(pattern, str) else pattern
+
+        matched = [f for f in self.items if regex.search(f.fullpath.name)]
+
+        if not matched:
+            return None
+        if len(matched) == 1:
+            return matched[0]
+        return matched

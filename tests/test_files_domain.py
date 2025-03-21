@@ -70,3 +70,43 @@ class FilesDomainTestCase(TestCase):
 
         self.assertTrue(file_2.is_exist)
 
+    def test_get_by_regex(self):
+        # Create test files
+        filenames = [
+            'alpha.txt',
+            'beta.txt',
+            'gamma.log',
+            'delta.txt',
+            'epsilon.log',
+        ]
+        local_files_items = set()
+
+        for name in filenames:
+            path = files_utils.create_text_file_in_directory(
+                directory=self.mng.directory_for_tmp,
+                content='test content',
+                filename=name
+            )
+            local_files_items.add(files_domain.LocalFile(fullpath=path))
+
+        local_files = files_domain.LocalFiles(items=local_files_items)
+
+        # No match
+        no_match = local_files.get_by_regex(r'^zeta')
+        self.assertIsNone(no_match)
+
+        # Single match
+        single_match = local_files.get_by_regex(r'^beta\.txt$')
+        self.assertIsInstance(single_match, files_domain.LocalFile)
+        self.assertEqual(single_match.fullpath.name, 'beta.txt')
+
+        # Multiple matches
+        multi_match = local_files.get_by_regex(r'\.log$')
+        self.assertIsInstance(multi_match, list)
+        self.assertEqual(len(multi_match), 2)
+        self.assertTrue(all(
+            isinstance(f, files_domain.LocalFile) for f in multi_match))
+        self.assertSetEqual(
+            set(f.fullpath.name for f in multi_match),
+            {'gamma.log', 'epsilon.log'}
+        )
