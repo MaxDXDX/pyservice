@@ -9,6 +9,7 @@ build
 
 restart-celery.sh
 artefacts
+artefacts-tests
 
 compose.override.yml
 .env

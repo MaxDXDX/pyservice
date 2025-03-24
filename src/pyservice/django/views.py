@@ -5,6 +5,7 @@ from logging import Logger
 from datetime import datetime as dt
 import pathlib
 
+from django.http import FileResponse
 from django.core.files import uploadedfile
 from django.core.files import storage
 from rest_framework.request import Request
@@ -135,3 +136,15 @@ class RestViewBaseAbstract(APIView):
         self.log.debug('File has been saved to: %s', target_fullpath)
         return target_fullpath
 
+    @staticmethod
+    def build_file_response(
+            full_path: pathlib.Path,
+    ) -> FileResponse:
+        with open(full_path, 'rb') as f:
+            response = FileResponse(
+                f,
+                content_type='application/pdf',
+                filename=full_path.name,  # optional for Content-Disposition
+                as_attachment=False  # IMPORTANT: inline display
+            )
+            return response
