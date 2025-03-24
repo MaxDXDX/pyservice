@@ -140,11 +140,12 @@ class RestViewBaseAbstract(APIView):
     def build_file_response(
             full_path: pathlib.Path,
     ) -> FileResponse:
-        with open(full_path, 'rb') as f:
-            response = FileResponse(
-                f,
-                content_type='application/pdf',
-                filename=full_path.name,  # optional for Content-Disposition
-                as_attachment=False  # IMPORTANT: inline display
-            )
-            return response
+        # pylint:disable=consider-using-with
+        response = FileResponse(
+            open(full_path, 'rb'),
+            content_type='application/pdf',
+            filename=full_path.name,  # optional for Content-Disposition
+            as_attachment=False  # IMPORTANT: inline display
+        )
+        # response['Cache-Control'] = 'max-age=60'
+        return response
