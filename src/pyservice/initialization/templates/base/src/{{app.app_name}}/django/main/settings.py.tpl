@@ -51,6 +51,11 @@ REST_FRAMEWORK = {
     )
 }
 
+if manager.config.is_dev_auth_enabled:
+    REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].insert(
+        0, '{{ app.app_name }}.django.auth.dev.DevAuth')
+
+
 # Application definition
 
 INSTALLED_APPS = [
