@@ -23,4 +23,4 @@ KEYCLOAK_REALM='phoenix-production-1'
 KEYCLOAK_CLIENT_ID='default-protected-client'
 KEYCLOAK_SECRET_KEY='gLhLyIM16Vt4mZ7Gbbk3haP3tQnZE0xO'
 
-DJANGO_CORS_ALLOWED_ORIGINS='["http://localhost:{{ app.docker_swagger_port }}"]'
+DJANGO_CORS_ALLOWED_ORIGINS='["https://editor-next.swagger.io", "http://localhost:{{ app.docker_swagger_port }}"]'

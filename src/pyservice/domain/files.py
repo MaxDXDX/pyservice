@@ -34,6 +34,14 @@ class LocalFile(base.BaseEntity):
         extension = self.fullpath.suffix.replace('.', '')
         return extension
 
+    @property
+    def filename_without_last_extension(self) -> str:
+        return self.fullpath.name.replace(f'.{self.last_extension}', '')
+
+    @property
+    def name_and_extension(self) -> tuple[str, str]:
+        return self.filename_without_last_extension, self.last_extension
+
     def binary_content(self):
         with open(self.fullpath, 'rb') as f:
             file_content = f.read()

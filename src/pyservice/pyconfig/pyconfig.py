@@ -127,6 +127,7 @@ class DjangoBasedMicroserviceConfig(MicroserviceConfig):
     keycloak_client_id: str = ''
     keycloak_secret_key: str = ''
 
+    is_dev_auth_enabled: bool = False
 
 
 default_app_config = AppConfig(

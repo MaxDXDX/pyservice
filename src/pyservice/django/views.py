@@ -40,6 +40,16 @@ class RestViewBaseAbstract(APIView):
     def _get(self, request, *args, **kwargs):
         raise NotImplementedError
 
+    def delete(self, request: Request, *args, **kwargs):
+        """DELETE handler."""
+        self._pre_processing_actions(request, *args, **kwargs)
+        result = self._delete(request, *args, **kwargs)
+        self._log_end(request, *args, **kwargs)
+        return result
+
+    def _delete(self, request, *args, **kwargs):
+        raise NotImplementedError
+
     def put(self, request: Request, *args, **kwargs):
         """PUT handler."""
         self._pre_processing_actions(request, *args, **kwargs)

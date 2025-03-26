@@ -33,7 +33,7 @@ services:
     hostname: {{ app.app_name }}-rabbit
     image: rabbitmq:3.13.3-management
     ports:
-      - {{ app.docker_rabbit_port }}:15672
+      - '{{ app.docker_rabbit_port }}:15672'
     environment:
       RABBITMQ_DEFAULT_USER: 'rabbit-admin'
       RABBITMQ_DEFAULT_PASS: 'rabbit-password'
@@ -45,7 +45,7 @@ services:
     hostname: {{ app.app_name }}-seq
     image: datalust/seq:2024.3
     ports:
-      - {{ app.docker_seq_port }}:80
+      - '{{ app.docker_seq_port }}:80'
     environment:
       ACCEPT_EULA: 'Y'
       # command for generating password hash: echo '<password>' | docker run --rm -i datalust/seq config hash
