@@ -1,6 +1,5 @@
 """Base classes for building REST API views."""
-
-
+import uuid
 from logging import Logger
 from datetime import datetime as dt
 import pathlib
@@ -95,40 +94,42 @@ class RestViewBaseAbstract(APIView):
         result = super().dispatch(request, *args, **kwargs)
         return result
 
+    def make_subdir_for_tmp_files(self) -> pathlib.Path:
+        now_point_without_dot = str(dt.now().timestamp()).replace('.', '')
+        random_uuid = uuid.uuid4()
+        target_dir = self.app_manager.directory_for_tmp / f'{now_point_without_dot}_{random_uuid}'
+        target_dir.mkdir(exist_ok=False)
+        return target_dir
+
 
     def save_incoming_files_to_tmp_dir(
             self,
             # pylint:disable=line-too-long
             files_from_request: list[uploadedfile.InMemoryUploadedFile | uploadedfile.TemporaryUploadedFile]
     ) -> list[pathlib.Path]:
+        now_point_without_dot = str(dt.now().timestamp()).replace('.', '')
+        random_uuid = uuid.uuid4()
+        target_dir = self.make_subdir_for_tmp_files()
         stack = []
         for _ in files_from_request:
-            saved = self.save_incoming_file_to_tmp_dir(_)
-            stack.append(saved)
+            if not isinstance(_, str):
+                saved = self.save_incoming_file_to_tmp_dir(
+                    _, target_dir=target_dir)
+                stack.append(saved)
         return stack
 
     def save_incoming_file_to_tmp_dir(
             self,
             # pylint:disable=line-too-long
-            file_from_request: uploadedfile.InMemoryUploadedFile | uploadedfile.TemporaryUploadedFile
+            file_from_request: uploadedfile.InMemoryUploadedFile | uploadedfile.TemporaryUploadedFile,
+            target_dir: pathlib.Path = None,
     ) -> pathlib.Path:
-        now_point_without_dot = str(dt.now().timestamp()).replace('.', '')
-        target_dir = self.app_manager.directory_for_tmp
-        original_filename = file_from_request.name
-        unique_filename = f'{now_point_without_dot}-{original_filename}'
+        if not target_dir:
+            target_dir = self.make_subdir_for_tmp_files()
+        target_fullpath = target_dir / file_from_request.name
         self.log.debug(
-            'saving uploaded file %s into drive directory %s '
-            'with new filename %s',
-            original_filename, target_dir, unique_filename)
-        target_fullpath = target_dir / unique_filename
-
-        self.log.debug(
-            'saving file from request to temporary directory:\n'
-            '- file from request: %s\n'
-            '- generated unique filename: %s\n'
-            '- target full path: %s\n',
-            file_from_request, unique_filename, target_fullpath
-        )
+            'saving uploaded file %s as: %s',
+            file_from_request, target_fullpath)
 
         is_file_with_same_filename_exists = target_fullpath.is_file()
         if is_file_with_same_filename_exists:
